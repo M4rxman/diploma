@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=3 uid="uid://70p0rscpkesx"]
+
+[sub_resource type="GDScript" id="GDScript_kgdan"]
+script/source = "extends Node3D
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass
+"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_88ca4"]
+albedo_color = Color(0, 1, 0.166667, 1)
+roughness = 0.0
+
+[sub_resource type="PrismMesh" id="PrismMesh_rcg0g"]
+material = SubResource("StandardMaterial3D_88ca4")
+size = Vector3(0.3, 0.25, 0.05)
+
+[node name="Cursor" type="Node3D"]
+script = SubResource("GDScript_kgdan")
+
+[node name="Coursor_Mesh" type="MeshInstance3D" parent="."]
+physics_interpolation_mode = 2
+transform = Transform3D(1, 4.37114e-08, 4.37114e-08, -4.37114e-08, -4.37114e-08, 1, 4.37114e-08, -1, -4.37114e-08, 0, 0.25, -0.7)
+layers = 2
+sorting_use_aabb_center = false
+mesh = SubResource("PrismMesh_rcg0g")
