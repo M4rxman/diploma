@@ -17,6 +17,6 @@ func _physics_process(delta: float) -> void:
 	
 	if not intersection.is_empty():
 		var pos = intersection.position
-		var horizontal_stabilization =  Vector3(pos.x, $Character3D.position.y, pos.z)
-		$Character3D/Cursor.look_at(horizontal_stabilization, Vector3.UP)
+		var horizontal_stabilization =  Vector3(pos.x, $Player.position.y, pos.z)
+		$Player/Cursor.look_at(horizontal_stabilization, Vector3.UP)
 		

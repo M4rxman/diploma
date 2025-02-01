@@ -21,7 +21,8 @@ physics_material_override = SubResource("PhysicsMaterial_nt8qm")
 freeze_mode = 1
 continuous_cd = true
 contact_monitor = true
-max_contacts_reported = 8
+max_contacts_reported = 4
+linear_damp_mode = 1
 script = ExtResource("1_5bxk4")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
@@ -35,9 +36,7 @@ wait_time = 5.0
 autostart = true
 
 [node name="Feet" type="RayCast3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0280252, -1.04981, -0.0191932)
 visibility_parent = NodePath("../MeshInstance3D")
-target_position = Vector3(0, 0, 0)
 debug_shape_thickness = 5
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

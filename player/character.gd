@@ -1,22 +1,28 @@
 extends RigidBody3D
 
-const TARGET_SPEED = 6.5
-const TARGET_GRAVITY = -1.0
+@onready var feet = $Feet
+
+const TARGET_SPEED = 8.0
+const TARGET_JUMP = 70.0
+const TARGET_GRAVITY = 120.0
 
 var dodge_ready = true
-var velocity: Vector3 = Vector3.ZERO
-var _pid := Pid3D.new(75.0, 0.1, 2.5)
+var is_on_floor = true 
+var is_on_slope = false
+
+var _pid := Pid3D.new(30.0, 0.05, 2.0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
-
+	pass
 
 func _physics_process(delta: float) -> void:
+	_apply_gravity(delta)
+	
 	# Movement
 	var direction = Vector3(
 		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
-		-0.0,
+		0.0,
 		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
 	).normalized()
 	var target_velocity = direction * TARGET_SPEED
@@ -24,38 +30,45 @@ func _physics_process(delta: float) -> void:
 	var correction_impulse = _pid.update(velocity_error, delta) * 0.01
 	apply_impulse(correction_impulse)
 	
-	
-	
-	
-	# Get input directions
-	var input := Vector3.ZERO
-		# Jumping logic
-	if  Input.is_action_just_pressed("jump") and dodge_ready:  # Replace with your jump action
-		dodge_ready = false
-		$Timer.start()
-		print("pressed Space")
-		print(dodge_ready)
-		input.y += 100.0
-		
-		if Input.is_action_pressed("move_forward"):
-			print("moved f")
-			input.z += 2
-		if Input.is_action_pressed("move_back"):
-			print("moved b")
-			input.z -= 2
-		if Input.is_action_pressed("move_left"):
-			print("moved l")
-			input.x += 2
-		if Input.is_action_pressed("move_right"):
-			print("moved r")
-			input.x -= 2
-	  
-	# Normalize direction to prevent faster diagonal movement
-	input = input.normalized()
-	
-	# Apply velocity
-	apply_impulse(input * 100.0 * delta)
+	# Jumping logic
+	if Input.is_action_just_pressed("jump"): 
+		if is_on_floor:
+			apply_impulse(Vector3(0.0, TARGET_JUMP, 0.0))
+			is_on_floor = false  # Ensure the player isn't marked as "on floor" immediately
+			print("Jumped")
 
 
 func _on_timer_timeout() -> void:
 	dodge_ready = true
+
+func _apply_gravity(delta: float) -> void:
+	if feet.is_colliding():
+		is_on_floor = true
+	else:
+		is_on_floor = false
+		# Apply a stronger gravity impulse to ensure falling  
+		apply_impulse(Vector3(0.0, -TARGET_GRAVITY, 0.0) * delta)
+
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	# Artificial stopping when no movement input
+	var move_input = Vector3(
+		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
+		0.0,
+		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
+	)
+	
+	# Define stop speed (tweak as necessary)
+	var stop_speed = 0.4
+	
+	if move_input.length() < 0.2:
+		state.linear_velocity.x = lerp(state.linear_velocity.x, 0.0, stop_speed)
+		state.linear_velocity.z = lerp(state.linear_velocity.z, 0.0, stop_speed)
+
+	# Slope resistance (push against unreasonable slopes)
+	if state.get_contact_count() > 0:
+		for i in range(state.get_contact_count()):
+			var contact_normal = state.get_contact_local_normal(i)
+			
+			# If on floor and slope is too steep (y < 0.9), counteract sliding
+			if is_on_floor and contact_normal.y < 0.8:
+				apply_central_force(-contact_normal * 20)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://c5jb68wi32jgt"]
+[gd_scene load_steps=20 format=3 uid="uid://c5jb68wi32jgt"]
 
 [ext_resource type="Script" path="res://scenes/Facing_Object_Mouse.gd" id="1_1f83i"]
 [ext_resource type="Texture2D" uid="uid://b0wrj472sg6o" path="res://textures/seamless_dirt_ground_texture_by.png" id="2_40ugu"]
@@ -59,6 +59,14 @@ size = Vector3(10, 3, 5)
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_b4egj"]
 points = PackedVector3Array(4.12593, 1.43617, 2.65873, -4.82445, -1.5, -2.4489, -4.76966, -1.48287, 2.5, 4.82445, -1.5, -2.4489, 5.07738, 1.59493, -2.57937, 4.76966, -1.48287, 2.5, -3.80778, -0.94401, -2.57937, 5.07738, 1.59493, 2.65873, -4.76023, -1.26153, 2.65873, 4.12593, 1.43617, -2.57937, -5.07738, -1.42029, -2.57937, -3.80778, -0.94401, 2.65873, -5.07738, -1.42029, 2.65873, 4.76023, 1.59493, 2.65873, -4.76023, -1.26153, -2.57937, 4.76023, 1.59493, -2.57937)
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dk3pn"]
+bounce = 0.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_3uqmq"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_fr2hm"]
+points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_1f83i")
 
@@ -75,7 +83,8 @@ directional_shadow_fade_start = 1.0
 directional_shadow_max_distance = 300.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(-1, -8.74228e-08, 0, -4.37114e-08, 0.5, 0.866025, -7.57103e-08, 0.866025, -0.5, 0, 91, -55.3809)
+transform = Transform3D(-1, -8.74227e-08, -1.16055e-14, -4.37114e-08, 0.5, 0.866025, -7.57103e-08, 0.866025, -0.5, -0.0255795, 90.9393, -55.3642)
+current = true
 fov = 25.0
 size = 56.0
 
@@ -84,12 +93,13 @@ material_override = SubResource("StandardMaterial3D_pf1qt")
 mesh = SubResource("PlaneMesh_6iqxr")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 0.1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_2ggv6")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.00691, 1.24822, 9.37927)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.2, 9)
 material_override = SubResource("StandardMaterial3D_sjwqh")
 mesh = SubResource("PrismMesh_i44g3")
 
@@ -98,9 +108,50 @@ mesh = SubResource("PrismMesh_i44g3")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D2/StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_b4egj")
 
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -10, 1.2, -7)
+material_override = SubResource("StandardMaterial3D_sjwqh")
+mesh = SubResource("PrismMesh_i44g3")
+skeleton = NodePath("../MeshInstance3D2")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D3"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D3/StaticBody3D"]
+shape = SubResource("ConvexPolygonShape3D_b4egj")
+
 [node name="Player" parent="." instance=ExtResource("2_cim3f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -3)
 mass = 5.0
 
 [node name="Cursor" parent="Player" instance=ExtResource("3_pwtpl")]
 script = null
+
+[node name="RigidBody3D" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.07275, 1.20257, 10.9004)
+physics_material_override = SubResource("PhysicsMaterial_dk3pn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
+mesh = SubResource("BoxMesh_3uqmq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
+shape = SubResource("ConvexPolygonShape3D_fr2hm")
+
+[node name="RigidBody3D" type="RigidBody3D" parent="RigidBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.18331, 1.10581, 0.0127792)
+physics_material_override = SubResource("PhysicsMaterial_dk3pn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D/RigidBody3D"]
+mesh = SubResource("BoxMesh_3uqmq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D/RigidBody3D"]
+shape = SubResource("ConvexPolygonShape3D_fr2hm")
+
+[node name="RigidBody3D" type="RigidBody3D" parent="RigidBody3D/RigidBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65285, 1.10581, 0.827827)
+physics_material_override = SubResource("PhysicsMaterial_dk3pn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D/RigidBody3D/RigidBody3D"]
+mesh = SubResource("BoxMesh_3uqmq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D/RigidBody3D/RigidBody3D"]
+shape = SubResource("ConvexPolygonShape3D_fr2hm")
