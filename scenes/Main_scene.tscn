@@ -136,11 +136,10 @@ skeleton = NodePath("../MeshInstance3D2")
 shape = SubResource("ConvexPolygonShape3D_b4egj")
 
 [node name="RigidBody3D" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.76144, 0.210342, 11.6922)
+transform = Transform3D(0.0197209, 0, -0.999806, 0, 1, 0, 0.999806, 0, 0.0197209, -7, 1.38844, 11)
 physics_material_override = SubResource("PhysicsMaterial_dk3pn")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0045557, 0.638439, -0.00370312)
 mesh = SubResource("BoxMesh_3uqmq")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]

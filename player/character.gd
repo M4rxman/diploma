@@ -4,7 +4,7 @@ extends RigidBody3D
 
 const TARGET_SPEED = 8.0
 const TARGET_JUMP = 70.0
-const TARGET_GRAVITY = 120.0
+const TARGET_GRAVITY = 200.0
 
 var dodge_ready = true
 var is_on_floor = true 
