@@ -35,3 +35,17 @@ func _physics_process(delta: float) -> void:
 		var horizontal_stabilization =  Vector3(pos.x, $Player.position.y, pos.z)
 		$Player/Cursor.look_at(horizontal_stabilization, Vector3.UP)
 		
+
+func _turn_off_enemy_ai() -> bool:
+	if $Generic_enemy._get_ai_status():
+		$Generic_enemy._set_ai_to_false()
+		return $Generic_enemy._get_ai_status()
+	else:
+		return true
+		
+func _turn_on_enemy_ai() -> bool:
+	if !$Generic_enemy._get_ai_status():
+		$Generic_enemy._set_ai_to_true()
+		return $Generic_enemy._get_ai_status()
+	else:
+		return false

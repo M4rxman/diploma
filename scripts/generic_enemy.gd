@@ -1,6 +1,7 @@
 extends RigidBody3D
 
 @onready var feet = $Feet
+@export var ai_is_active = false
 
 const TARGET_SPEED = 4.0
 const TARGET_JUMP = 70.0
@@ -9,16 +10,17 @@ const MAX_HEALTH = 100
 
 var target: Node3D  # The player reference
 var is_on_floor = true 
-var _pid := Pid3D.new(25.0, 0.1, 0.5)
+var _pid := Pid3D.new(25.0, 0.1, 1.0)
 var health: int = MAX_HEALTH  # Enemy health
 
 func _ready() -> void:
 	# Auto-find the player in the scene
 	target = get_tree().get_first_node_in_group("player")
-
+	
+	
 func _physics_process(delta: float) -> void:
 	_apply_gravity(delta)
-	if not target:
+	if not target or !ai_is_active:
 		return
 	
 	# Get movement direction toward the player
@@ -54,3 +56,12 @@ func die() -> void:
 	# Check if all enemies are defeated
 	if get_tree().get_nodes_in_group("enemies").is_empty():
 		print("You win!")
+
+func _set_ai_to_false() -> void:
+	ai_is_active = false
+	
+func _set_ai_to_true() -> void:
+	ai_is_active = true
+	
+func _get_ai_status() -> bool:
+	return ai_is_active

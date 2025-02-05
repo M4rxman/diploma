@@ -16,8 +16,6 @@ var is_on_slope = false
 
 var _pid := Pid3D.new(30.0, 0.05, 2.0)
 
-
-
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	pass
@@ -46,16 +44,16 @@ func _physics_process(delta: float) -> void:
 	
 	# Jumping logic
 	if Input.is_action_just_pressed("jump"): 
-		if is_on_floor:
-			apply_impulse(Vector3(0.0, TARGET_JUMP, 0.0))
-			is_on_floor = false  # Ensure the player isn't marked as "on floor" immediately
-			print("Jumped")
+		_jump()
 
 func instantiate() -> void:
 	pass
 
-func _on_timer_timeout() -> void:
-	dodge_ready = true
+func _jump() -> void: 
+	if is_on_floor:
+			apply_impulse(Vector3(0.0, TARGET_JUMP, 0.0))
+			is_on_floor = false  # Ensure the player isn't marked as "on floor" immediately
+			print("Jumped")
 
 func _apply_gravity(delta: float) -> void:
 	if feet.is_colliding():
