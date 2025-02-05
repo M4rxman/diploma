@@ -4,9 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://b0wrj472sg6o" path="res://textures/seamless_dirt_ground_texture_by.png" id="2_40ugu"]
 [ext_resource type="PackedScene" uid="uid://ckq2hbpkp2mxk" path="res://player/character.tscn" id="2_cim3f"]
 [ext_resource type="Texture2D" uid="uid://p5m6w3qpdby4" path="res://textures/low-poly-background-polygon-pattern-for-photoshop-thumb49.png" id="2_efb55"]
-[ext_resource type="Material" uid="uid://dp24u6mwqm6nc" path="res://materials/Main_scene.tres" id="3_h42pw"]
+[ext_resource type="Material" path="res://materials/Main_scene.tres" id="3_h42pw"]
 [ext_resource type="PackedScene" uid="uid://70p0rscpkesx" path="res://player/Cursor.tscn" id="3_pwtpl"]
-[ext_resource type="PackedScene" uid="uid://ca1e0v8uxc1op" path="res://scenes/generic_enemy.tscn" id="6_om1wb"]
+[ext_resource type="PackedScene" uid="uid://4behw82afneo" path="res://scenes/generic_enemy.tscn" id="6_om1wb"]
 [ext_resource type="Script" path="res://scripts/SaveManager.gd" id="8_xvbq2"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yvygi"]
