@@ -1,8 +1,12 @@
 extends RigidBody3D
 
 @onready var feet = $Feet
+@export var attack_damage: int = 25  # Damage per attack
+@export var attack_range: float = 10  # How close the enemy must be to attack
+@onready var interaction_ray = $InteractionRay 
+var health = 100  # Додаємо змінну здоров'я
 
-const TARGET_SPEED = 8.0
+const TARGET_SPEED = 10.0
 const TARGET_JUMP = 70.0
 const TARGET_GRAVITY = 200.0
 
@@ -12,12 +16,22 @@ var is_on_slope = false
 
 var _pid := Pid3D.new(30.0, 0.05, 2.0)
 
+
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	pass
 
 func _physics_process(delta: float) -> void:
 	_apply_gravity(delta)
+	
+	# Attack
+	if Input.is_action_just_pressed("attack"):  # Define an "attack" action in InputMap
+		_attack()
+	
+	# Interact
+	if Input.is_action_just_pressed("interact"):
+		_try_interact()
 	
 	# Movement
 	var direction = Vector3(
@@ -37,6 +51,8 @@ func _physics_process(delta: float) -> void:
 			is_on_floor = false  # Ensure the player isn't marked as "on floor" immediately
 			print("Jumped")
 
+func instantiate() -> void:
+	pass
 
 func _on_timer_timeout() -> void:
 	dodge_ready = true
@@ -71,4 +87,24 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			
 			# If on floor and slope is too steep (y < 0.9), counteract sliding
 			if is_on_floor and contact_normal.y < 0.8:
-				apply_central_force(-contact_normal * 20)
+				apply_central_force(-contact_normal * 20.0)
+
+func take_damage(amount):
+	health -= amount
+	if health <= 0:
+		queue_free()  # Гравець помер
+
+func _attack() -> void:
+	print("Player attacked!")
+	var enemies = get_tree().get_nodes_in_group("enemies")
+
+	for enemy in enemies:
+		if global_transform.origin.distance_to(enemy.global_transform.origin) <= attack_range:
+			enemy.take_damage(attack_damage)
+
+func _try_interact():
+	if interaction_ray.is_colliding():
+		var target = interaction_ray.get_collider()
+		if target.has_method("interact"):
+			target.interact()
+			print("Взаємодія виконана!")
