@@ -1,10 +1,12 @@
-[gd_scene load_steps=24 format=3 uid="uid://c5jb68wi32jgt"]
+[gd_scene load_steps=27 format=3 uid="uid://c5jb68wi32jgt"]
 
 [ext_resource type="Script" path="res://scenes/Facing_Object_Mouse.gd" id="1_1f83i"]
 [ext_resource type="Texture2D" uid="uid://b0wrj472sg6o" path="res://textures/seamless_dirt_ground_texture_by.png" id="2_40ugu"]
 [ext_resource type="PackedScene" uid="uid://ckq2hbpkp2mxk" path="res://player/character.tscn" id="2_cim3f"]
 [ext_resource type="Texture2D" uid="uid://p5m6w3qpdby4" path="res://textures/low-poly-background-polygon-pattern-for-photoshop-thumb49.png" id="2_efb55"]
+[ext_resource type="Material" uid="uid://dp24u6mwqm6nc" path="res://materials/Main_scene.tres" id="3_h42pw"]
 [ext_resource type="PackedScene" uid="uid://70p0rscpkesx" path="res://player/Cursor.tscn" id="3_pwtpl"]
+[ext_resource type="PackedScene" uid="uid://ca1e0v8uxc1op" path="res://scenes/generic_enemy.tscn" id="6_om1wb"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yvygi"]
 sky_top_color = Color(0.143, 0.522867, 0.55, 1)
@@ -23,21 +25,8 @@ glow_enabled = true
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wsd81"]
 albedo_texture = ExtResource("2_40ugu")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uionq"]
-albedo_color = Color(0.33, 0.33, 0.33, 1)
-albedo_texture = ExtResource("2_efb55")
-albedo_texture_force_srgb = true
-metallic = 1.0
-metallic_specular = 0.0
-metallic_texture = ExtResource("2_efb55")
-roughness_texture = ExtResource("2_efb55")
-roughness_texture_channel = 3
-normal_enabled = true
-normal_scale = 0.09
-normal_texture = ExtResource("2_efb55")
-
 [sub_resource type="PlaneMesh" id="PlaneMesh_6iqxr"]
-material = SubResource("StandardMaterial3D_uionq")
+material = ExtResource("3_h42pw")
 size = Vector2(50, 50)
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_2ggv6"]
@@ -61,6 +50,15 @@ points = PackedVector3Array(4.12593, 1.43617, 2.65873, -4.82445, -1.5, -2.4489, 
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i4f3u"]
 albedo_texture = ExtResource("2_40ugu")
+
+[sub_resource type="SphereMesh" id="SphereMesh_av5ob"]
+radius = 10.0
+height = 10.0
+radial_segments = 6
+rings = 6
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4n67e"]
+points = PackedVector3Array(-7.25476, -2.5373, -4.0993, 8.30694, 1.27584, 4.7072, 7.09214, 2.73123, 4.09565, -0.522844, -1.0808, 9.44743, -6.30274, 3.28267, 3.76498, 0.359086, 1.27217, -9.38829, 3.5397, -4.5335, -2.02522, 6.72919, 2.99263, -4.05345, -6.58471, -3.08466, 4.04823, -3.70877, 4.45498, -2.32249, 8.23706, -1.35962, -4.66728, 6.77681, -3.11031, 3.79187, -8.07709, 1.26075, -4.94324, 0.358278, -3.11944, -7.60634, 0.354452, 4.4267, 4.33003, -0.220231, -4.52416, 4.04201, -8.19757, -1.0805, 5.01636, -0.514213, 1.26108, 9.30941, -3.41156, -4.54353, -2.02975, 3.82592, 4.43261, -2.31095, -0.522844, -1.0808, -9.44743, -0.50686, 3.25523, -7.18, 8.30694, 1.27584, -4.7072, -8.07709, 1.26074, 4.94323, 8.23706, -1.35962, 4.66728, 0.358278, -3.11944, 7.60634, 6.77681, -3.11031, -3.79187, -8.19757, -1.0805, -5.01636, -0.51771, 3.02451, 7.60887, -6.64156, 3.01466, -4.08283, 0.359086, 1.27217, 9.38829, -1.96294, 4.73833, 1.15941)
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dk3pn"]
 bounce = 0.2
@@ -125,22 +123,22 @@ mesh = SubResource("PrismMesh_i44g3")
 shape = SubResource("ConvexPolygonShape3D_b4egj")
 
 [node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -10, 1.2, -7)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -10, -1.5, -7)
 material_override = SubResource("StandardMaterial3D_i4f3u")
-mesh = SubResource("PrismMesh_i44g3")
+mesh = SubResource("SphereMesh_av5ob")
 skeleton = NodePath("../MeshInstance3D2")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D3"]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D3/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_b4egj")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("ConvexPolygonShape3D_4n67e")
 
 [node name="RigidBody3D" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.76144, 0.210342, 11.6922)
+transform = Transform3D(0.0197209, 0, -0.999806, 0, 1, 0, 0.999806, 0, 0.0197209, -7, 1.38844, 11)
 physics_material_override = SubResource("PhysicsMaterial_dk3pn")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0045557, 0.638439, -0.00370312)
 mesh = SubResource("BoxMesh_3uqmq")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
@@ -169,9 +167,12 @@ skeleton = NodePath("../../RigidBody3D3")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D3"]
 shape = SubResource("ConvexPolygonShape3D_fr2hm")
 
-[node name="Player" parent="." instance=ExtResource("2_cim3f")]
+[node name="Player" parent="." groups=["player"] instance=ExtResource("2_cim3f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -3)
 mass = 5.0
 
 [node name="Cursor" parent="Player" instance=ExtResource("3_pwtpl")]
 script = null
+
+[node name="Generic_enemy" parent="." groups=["enemies"] instance=ExtResource("6_om1wb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0373, 1.61939, 2.81538)

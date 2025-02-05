@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://ca1e0v8uxc1op"]
+
+[ext_resource type="Script" path="res://scripts/generic_enemy.gd" id="1_4gp2m"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_jsiwy"]
+friction = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85tpk"]
+albedo_color = Color(0.48, 0, 0, 1)
+metallic = 1.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_iwqgq"]
+material = SubResource("StandardMaterial3D_85tpk")
+radial_segments = 6
+rings = 3
+is_hemisphere = true
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_povk1"]
+points = PackedVector3Array(0.0922973, 0.870111, 0.103514, 0.0344303, 0.00553108, -0.478976, -0.0265429, 0.019562, -0.480625, 0.0190992, 0, 0.484334, -0.419116, 0.0774214, 0.241547, 0.430936, 0.011509, 0.244197, -0.296007, 0.709581, -0.17969, 0.301019, 0.708179, -0.178488, -0.0114236, 0.709423, 0.3442, -0.416893, 0.0196347, -0.255234, 0.430936, 0.011509, -0.244197, -0.0114236, 0.709423, -0.3442, 0.301019, 0.708179, 0.178488, -0.296007, 0.709581, 0.17969, -0.0115239, 0.982056, -0.0150082, -0.416893, 0.0196344, 0.255235, -0.0265429, 0.0195617, 0.480625, -0.313462, 0.665959, -0.181126, 0.0184392, 0.978832, 0.0149078, 0.0190992, -1.11022e-16, -0.453102, 0.0183397, 0.708022, -0.341898, 0.0183397, 0.708022, 0.341898, -0.419116, 0.0774214, -0.241547, -0.313462, 0.665959, 0.181126, 0.36494, 0.379537, 0.210684, -0.0115239, 0.982056, 0.0150082, 0.0183171, 0.0696165, 0.47501, 0.36494, 0.379537, -0.210684, 0.0184392, 0.978832, -0.0149078, 0.41373, 0.013848, 0.258258, -0.116148, 0.888897, -0.0597988, 0.41373, 0.0138477, -0.258259)
+
+[node name="Generic_enemy" type="RigidBody3D"]
+axis_lock_angular_y = true
+physics_material_override = SubResource("PhysicsMaterial_jsiwy")
+script = ExtResource("1_4gp2m")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_iwqgq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("ConvexPolygonShape3D_povk1")
+
+[node name="Feet" type="RayCast3D" parent="."]

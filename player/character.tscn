@@ -1,11 +1,16 @@
-[gd_scene load_steps=5 format=3 uid="uid://ckq2hbpkp2mxk"]
+[gd_scene load_steps=6 format=3 uid="uid://ckq2hbpkp2mxk"]
 
 [ext_resource type="Script" path="res://player/character.gd" id="1_5bxk4"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_nt8qm"]
 friction = 0.0
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7u4fy"]
+albedo_color = Color(0, 0.6, 0.16, 1)
+metallic = 1.0
+
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_jy02s"]
+material = SubResource("StandardMaterial3D_7u4fy")
 radial_segments = 6
 rings = 1
 
