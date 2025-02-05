@@ -1,9 +1,22 @@
 extends Node3D
-		
 
+@onready var player = $Player
+@onready var enemies = get_tree().get_nodes_in_group("enemies")
+@onready var save_manager = $SaveManager
 
 var ray_origin = Vector3()
 var ray_target = Vector3()
+
+func _ready():
+	if not save_manager.load_game(player, enemies):
+		print("Запускаємо гру з початковими параметрами.")
+
+func _input(event):
+	if event.is_action_pressed("save_game"):
+		save_manager.save_game(player, enemies)
+	elif event.is_action_pressed("load_game"):
+		if not save_manager.load_game(player, enemies):
+			print("Завантаження не вдалося. Гра починається з нуля.")
 
 func _physics_process(delta: float) -> void:
 	var mouse_position = get_viewport().get_mouse_position()

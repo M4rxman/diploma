@@ -44,4 +44,7 @@ autostart = true
 visibility_parent = NodePath("../MeshInstance3D")
 debug_shape_thickness = 5
 
+[node name="InteractionRay" type="RayCast3D" parent="."]
+target_position = Vector3(0, 0, 0)
+
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

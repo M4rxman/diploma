@@ -2,7 +2,7 @@ extends RigidBody3D
 
 @onready var feet = $Feet
 
-const TARGET_SPEED = 8.0
+const TARGET_SPEED = 4.0
 const TARGET_JUMP = 70.0
 const TARGET_GRAVITY = 200.0
 const MAX_HEALTH = 100
