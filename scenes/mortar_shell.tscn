@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3 uid="uid://dwpvjg3rpf6fr"]
+
+[ext_resource type="Texture2D" uid="uid://c5g3v6vgrk0v8" path="res://textures/Texturelabs_Film_185M.jpg" id="1_2k6l1"]
+[ext_resource type="Script" path="res://scripts/mortar_shell.gd" id="1_nqu5k"]
+[ext_resource type="Texture2D" uid="uid://p5m6w3qpdby4" path="res://textures/low-poly-background-polygon-pattern-for-photoshop-thumb49.png" id="2_owl50"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6gacd"]
+albedo_texture = ExtResource("1_2k6l1")
+heightmap_enabled = true
+heightmap_scale = 1.0
+heightmap_texture = ExtResource("2_owl50")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_cvwe3"]
+material = SubResource("StandardMaterial3D_6gacd")
+radius = 0.05
+height = 0.25
+radial_segments = 4
+rings = 0
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4rn0d"]
+points = PackedVector3Array(0.0328971, 0.0888088, 0.00329413, -0.0460961, -0.0703093, -0.00390389, -0.0468332, -0.0714434, 0.00316681, 0.0467766, -0.0725774, 0.00322338, 0.00316681, 0.0714434, -0.0468332, -0.00396046, 0.0714434, 0.0460395, -0.0442326, 0.0767261, -0.00404128, -0.00390389, -0.0703093, -0.0460961, 0.00329421, -0.0777066, 0.0439992, 0.00329413, -0.118412, 0.00329413, -0.00406449, 0.117665, 0.00327084, 0.0467766, 0.0725774, 0.00322338, 0.0460395, -0.0714434, -0.00396046, 0.00322338, 0.0725774, 0.0467766, -0.0468332, 0.0714434, 0.00316681, 0.00316681, -0.0714434, -0.0468332, -0.00396046, -0.0714434, 0.0460395, -0.00390389, 0.0703093, -0.0460961, 0.0460395, 0.0714434, -0.00396046, 0.00327084, 0.117665, -0.00406449, -0.0040412, -0.116918, -0.0040412, 0.00322338, -0.0725774, 0.0467766, -0.00406449, -0.117665, 0.00327084, 0.00327084, -0.117665, -0.00406449, -0.0040412, 0.116918, -0.0040412, 0.00329413, 0.118412, 0.00329413, -0.0460961, 0.0703093, -0.00390389, -0.0442326, -0.0767261, -0.00404128, -0.00404128, -0.0767261, -0.0442326, -0.00404128, 0.0767261, -0.0442326, 0.0437191, -0.0772163, -0.00406457, -0.00406457, 0.0772163, 0.0437191)
+
+[node name="MortarShell" type="RigidBody3D"]
+script = ExtResource("1_nqu5k")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_cvwe3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("ConvexPolygonShape3D_4rn0d")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+omni_range = 2.25
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+visible = false
+amount = 4
+sub_emitter = NodePath(".")
