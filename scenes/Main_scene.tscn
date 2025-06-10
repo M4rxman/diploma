@@ -165,8 +165,9 @@ mesh = SubResource("BoxMesh_3uqmq")
 shape = SubResource("ConvexPolygonShape3D_fr2hm")
 
 [node name="Player" parent="." groups=["player"] instance=ExtResource("2_cim3f")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.64591, 4.00621, -7.90113)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.52295, 3.64967, -7.9995)
 mass = 5.0
+slope_correction_strength = 0.0
 
 [node name="Cursor" parent="Player" instance=ExtResource("3_pwtpl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)

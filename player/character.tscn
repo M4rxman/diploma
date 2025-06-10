@@ -1,17 +1,22 @@
-[gd_scene load_steps=7 format=3 uid="uid://ckq2hbpkp2mxk"]
+[gd_scene load_steps=8 format=3 uid="uid://ckq2hbpkp2mxk"]
 
 [ext_resource type="Script" path="res://player/character.gd" id="1_5bxk4"]
 [ext_resource type="PackedScene" uid="uid://dwpvjg3rpf6fr" path="res://scenes/mortar_shell.tscn" id="2_l3lwv"]
+[ext_resource type="Shader" path="res://shaders/character.gdshader" id="3_fgy3x"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_nt8qm"]
 friction = 0.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7u4fy"]
-albedo_color = Color(0, 0.6, 0.16, 1)
-metallic = 1.0
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h3uvl"]
+render_priority = 0
+shader = ExtResource("3_fgy3x")
+shader_parameter/glow_intensity = 1.5
+shader_parameter/noise_scale = 2.0
+shader_parameter/time_speed = 1.0
+shader_parameter/base_color = Color(0, 1, 0, 1)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_jy02s"]
-material = SubResource("StandardMaterial3D_7u4fy")
+material = SubResource("ShaderMaterial_h3uvl")
 height = 1.0
 radial_segments = 6
 rings = 1
