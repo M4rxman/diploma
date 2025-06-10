@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode unshaded;
 
 uniform float glow_intensity : hint_range(0.0, 5.0) = 1.3;
-uniform float noise_scale : hint_range(0.01, 1.0) = 1.0;
+uniform float noise_scale : hint_range(0.01, 3.0) = 3.0; 
 uniform float time_speed : hint_range(0.01, 1.0) = 1.0;
 uniform vec3 base_color : source_color = vec3(0.0, 1.0, 0.0); // Зелений
 

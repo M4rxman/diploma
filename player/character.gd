@@ -2,25 +2,20 @@ extends RigidBody3D
 
 @onready var feet = $Feet  # RayCast3D for floor detection
 @onready var interaction_ray = $InteractionRay 
+@onready var weapon_system = $WeaponManager
 
-# Mortar attack variables
+# Mortar attack variables (keeping existing functionality)
 @export var mortar_shell_scene: PackedScene  # Assign mortar_shell.tscn in inspector
 @export var mortar_launch_angle: float = 45.0  # Launch angle in degrees
 @export var mortar_min_range: float = 10.0
 @export var mortar_max_range: float = 80.0
-@export var mortar_cooldown: float = 1.5
 @onready var launch_point = $"."  # Add a Marker3D child node for launch position
 
-var health = 100  # Додаємо змінну здоров'я
-var can_fire_mortar: bool = true
+var health := 100  # Додаємо змінну здоров'я
 
-const TARGET_SPEED = 10.0
-const TARGET_JUMP = 70.0
-const TARGET_GRAVITY = 200.0
-
-# Slope detection variables
-@export var max_walkable_angle: float = 45.0  # Maximum angle player can walk on (degrees)
-@export var slope_correction_strength: float = 1.0  # How much to correct sliding (0-1)
+const TARGET_SPEED := 10.0
+const TARGET_JUMP := 70.0
+const TARGET_GRAVITY := 200.0
 
 var dodge_ready = true
 var is_on_floor = true 
@@ -33,20 +28,29 @@ func _ready() -> void:
 	linear_damp = 0.5  # Some base damping
 	angular_damp = 5.0  # Prevent rotation
 	
+	# Add to player group for enemy targeting
+	add_to_group("player")
+	
 	# Create launch point if it doesn't exist
 	if not launch_point:
 		launch_point = Marker3D.new()
 		launch_point.name = "LaunchPoint"
 		launch_point.position = Vector3(0, 1.5, 0.5)  # Slightly forward and up
 		add_child(launch_point)
+	
+	# Connect weapon system signals
+	if weapon_system:
+		weapon_system.mortar_shell_scene = mortar_shell_scene
+		weapon_system.weapon_changed.connect(_on_weapon_changed)
 
 func _physics_process(delta: float) -> void:
 	_update_floor_detection()
 	_apply_gravity(delta)
 	
-	# Mortar Attack (replaces old attack)
+	# Fire current weapon
 	if Input.is_action_just_pressed("attack"):
-		_fire_mortar_at_cursor()
+		if weapon_system:
+			weapon_system.fire()
 	
 	# Interact
 	if Input.is_action_just_pressed("interact"):
@@ -125,12 +129,15 @@ func _try_interact():
 			target.interact()
 			print("Взаємодія виконана!")
 
-# Mortar firing functions
+func _on_weapon_changed(weapon_type):
+	print("Weapon changed to: ", weapon_type)
+	# You can add UI updates or other effects here
+
+# Mortar firing functions (called by weapon system)
 func _fire_mortar_at_cursor():
 	"""Fire a mortar at the cursor position"""
-	if not can_fire_mortar or not mortar_shell_scene:
-		if not mortar_shell_scene:
-			print("Mortar shell scene not assigned!")
+	if not mortar_shell_scene:
+		print("Mortar shell scene not assigned!")
 		return
 	
 	# Get target position from mouse cursor
@@ -141,9 +148,18 @@ func _fire_mortar_at_cursor():
 		
 	var mouse_pos = get_viewport().get_mouse_position()
 	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * 1000
+	var to = from + camera.project_ray_normal(mouse_pos) * 2000
 	
 	var space_state = get_world_3d().direct_space_state
+	var ray_intersection = PhysicsRayQueryParameters3D.new()
+	ray_intersection.from = from
+	ray_intersection.to = to
+	var intersection = space_state.intersect_ray(ray_intersection)
+	
+	if not intersection.is_empty():
+		var pos = intersection.position
+		var horizontal_stabilization =  Vector3(pos.x, $Player.position.y, pos.z)
+		
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [self]  # Exclude the player
 	var result = space_state.intersect_ray(query)
@@ -155,7 +171,7 @@ func _fire_mortar_at_cursor():
 
 func _fire_mortar_at_position(target_pos: Vector3):
 	"""Fire a mortar shell at specified world position"""
-	if not mortar_shell_scene or not can_fire_mortar:
+	if not mortar_shell_scene:
 		return
 	
 	var distance = global_position.distance_to(target_pos)
@@ -193,11 +209,6 @@ func _fire_mortar_at_position(target_pos: Vector3):
 		# Visual feedback - small recoil
 		var recoil = -look_direction * 2.0
 		apply_impulse(recoil)
-		
-		# Cooldown
-		can_fire_mortar = false
-		await get_tree().create_timer(mortar_cooldown).timeout
-		can_fire_mortar = true
 		
 		print("Mortar fired! Target: ", target_pos, " Distance: ", distance)
 	else:

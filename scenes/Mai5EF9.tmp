@@ -1,6 +1,6 @@
 [gd_scene load_steps=29 format=3 uid="uid://c5jb68wi32jgt"]
 
-[ext_resource type="Script" path="res://scripts/GameManager.gd" id="1_4c6iq"]
+[ext_resource type="Script" path="res://scripts/Game_Manager.gd" id="1_4c6iq"]
 [ext_resource type="Texture2D" uid="uid://b0wrj472sg6o" path="res://textures/seamless_dirt_ground_texture_by.png" id="2_40ugu"]
 [ext_resource type="PackedScene" uid="uid://ckq2hbpkp2mxk" path="res://player/character.tscn" id="2_cim3f"]
 [ext_resource type="Texture2D" uid="uid://p5m6w3qpdby4" path="res://textures/low-poly-background-polygon-pattern-for-photoshop-thumb49.png" id="2_efb55"]

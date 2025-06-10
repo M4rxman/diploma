@@ -1,3 +1,4 @@
+class_name Mortar_Shell
 extends RigidBody3D
 
 @export var explosion_radius: float = 5.0
@@ -94,7 +95,7 @@ func explode():
 			var force_direction = (body.global_position - global_position).normalized()
 			var force_distance = global_position.distance_to(body.global_position)
 			var force_multiplier = 1.0 - (force_distance / explosion_radius)
-			force_multiplier = clamp(force_multiplier, 0.0, 1.0)
+			force_multiplier = clamp(force_multiplier, 0.0, 0.5)
 			body.apply_central_impulse(force_direction * explosion_force * force_multiplier)
 	
 	# Spawn explosion effect

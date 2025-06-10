@@ -1,5 +1,7 @@
 extends Node3D
 
+class_name GameManager
+
 @onready var player = $Player
 @onready var enemies = get_tree().get_nodes_in_group("enemies")
 @onready var save_manager = $SaveManager
@@ -8,8 +10,11 @@ var ray_origin = Vector3()
 var ray_target = Vector3()
 
 func _ready():
+	GameManagerGlobal.set_scene_game_manager(self)
+	
 	if not save_manager.load_game(player, enemies):
 		print("Запускаємо гру з початковими параметрами.")
+
 
 func _input(event):
 	if event.is_action_pressed("save_game"):
@@ -33,7 +38,7 @@ func _physics_process(delta: float) -> void:
 	if not intersection.is_empty():
 		var pos = intersection.position
 		var horizontal_stabilization =  Vector3(pos.x, $Player.position.y, pos.z)
-		$Player/Cursor.look_at(horizontal_stabilization, Vector3.UP)
+		$Player.look_at(horizontal_stabilization, Vector3.UP)
 		
 
 func _turn_off_enemy_ai() -> bool:
@@ -49,3 +54,11 @@ func _turn_on_enemy_ai() -> bool:
 		return $Generic_enemy._get_ai_status()
 	else:
 		return false
+		
+func get_targets() -> Array[Node]: 
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	var interacables := get_tree().get_nodes_in_group("interact")
+	
+	enemies.append_array(interacables)
+	
+	return enemies
