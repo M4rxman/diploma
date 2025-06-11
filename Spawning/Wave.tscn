@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bkoshylrfy1x8"]
+
+[ext_resource type="Script" path="res://Spawning/Wave.gd" id="1"]
+
+[node name="Wave" type="Node"]
+script = ExtResource("1")

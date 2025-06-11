@@ -158,7 +158,7 @@ func _fire_mortar_at_cursor():
 	
 	if not intersection.is_empty():
 		var pos = intersection.position
-		var horizontal_stabilization =  Vector3(pos.x, $Player.position.y, pos.z)
+		var horizontal_stabilization =  Vector3(pos.x, $".".position.y, pos.z)
 		
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [self]  # Exclude the player
