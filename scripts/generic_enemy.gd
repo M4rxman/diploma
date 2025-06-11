@@ -1,6 +1,7 @@
 extends RigidBody3D
 
 @onready var feet = $Feet
+@onready var nav_agent = $NavigationAgent3D
 @export var ai_is_active = false
 
 const TARGET_SPEED = 4.0
@@ -15,7 +16,15 @@ var health: int = MAX_HEALTH  # Enemy health
 
 func _ready() -> void:
 	# Auto-find the player in the scene
+	
 	target = get_tree().get_first_node_in_group("player")
+	if not has_node("NavigationAgent3D"):
+		nav_agent = NavigationAgent3D.new()
+		add_child(nav_agent)
+		
+	nav_agent.path_desired_distance = 0.5
+	nav_agent.target_desired_distance = 1.0
+	nav_agent.path_max_distance = 1.0
 	
 	
 func _physics_process(delta: float) -> void:
@@ -23,8 +32,17 @@ func _physics_process(delta: float) -> void:
 	if not target or !ai_is_active:
 		return
 	
+	# Use NavigationAgent3D for pathfinding
+	nav_agent.target_position = target.global_position
+
+	if nav_agent.is_navigation_finished():
+		return
+
+	var next_position = nav_agent.get_next_path_position()
+	var direction = (next_position - global_position).normalized()
+	
 	# Get movement direction toward the player
-	var direction = (target.global_transform.origin - global_transform.origin).normalized()
+	#var direction = (target.global_transform.origin - global_transform.origin).normalized()
 	var target_velocity = direction * TARGET_SPEED
 	var velocity_error = target_velocity - linear_velocity
 	var correction_impulse = _pid.update(velocity_error, delta) * 0.01

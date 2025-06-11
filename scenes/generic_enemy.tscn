@@ -31,3 +31,5 @@ mesh = SubResource("SphereMesh_iwqgq")
 shape = SubResource("ConvexPolygonShape3D_povk1")
 
 [node name="Feet" type="RayCast3D" parent="."]
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

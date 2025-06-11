@@ -11,7 +11,7 @@ var ray_target = Vector3()
 
 func _ready():
 	GameManagerGlobal.set_scene_game_manager(self)
-	
+	_turn_on_enemy_ai()
 	if not save_manager.load_game(player, enemies):
 		print("Запускаємо гру з початковими параметрами.")
 

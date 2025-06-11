@@ -1,17 +1,7 @@
-extends Navigation
+# Helper script to set up navigation properly in Godot 4
+extends Node
 
-class_name NavigationMap
-
-const CELL_SIZE = 2
-
-var map_coords_array := []
-var random_map_coords := []
-
-export(Array, Array) var obstacle_map := []
-var map_center: Coord
-
-export(int) var map_width
-export(int) var map_depth 
+#class_name NavigationM
 
 class Coord:
 	var x: int
@@ -27,46 +17,52 @@ class Coord:
 		
 	func equals(coord):
 		return coord.x == self.x and coord.z == self.z
-		
-func get_waves():
-	return $Waves.get_children()
 
-func _ready():
-	fill_map_coords_array()
-	fill_random_map_coords()
+static func setup_navigation_for_level(level_root: Node3D) -> NavigationRegion3D:
+	# Find or create NavigationRegion3D
+	var nav_region = level_root.get_node_or_null("NavigationRegion3D") as NavigationRegion3D
 	
-func update_map_center():
-	map_center = Coord.new(map_width/2, map_depth/2)
+	if not nav_region:
+		nav_region = NavigationRegion3D.new()
+		nav_region.name = "NavigationRegion3D"
+		level_root.add_child(nav_region)
 	
-func fill_map_coords_array():
-	map_coords_array = []
-	for x in range(map_width):
-		for z in range(map_depth):
-			map_coords_array.append(Coord.new(x, z))
-			
-func fill_random_map_coords():
-	random_map_coords = map_coords_array.duplicate()
-	random_map_coords.shuffle()
-	
-func get_next_random_map_coord():
-	if not random_map_coords:
-		fill_map_coords_array()
-	return random_map_coords.pop_front()
-	
-func is_obstacle(coord: Coord):
-	return obstacle_map[coord.x][coord.z]
-	
-func get_random_empty_coord():
-	while true: # assume that there will always be at least one empty coord
-		var coord = get_next_random_map_coord()
-		if not is_obstacle(coord):
-			return coord
-			
-func get_random_empty_vec3():
-	return coord_to_vector3(get_random_empty_coord())
-	
-func coord_to_vector3(coord: Coord):
-	var x = CELL_SIZE * coord.x - (map_width-1)*CELL_SIZE/2
-	var z = CELL_SIZE * coord.z - (map_depth-1)*CELL_SIZE/2
-	return Vector3(x, 0, z)
+	# Create navigation mesh if needed
+	if not nav_region.navigation_mesh:
+		var nav_mesh = NavigationMesh.new()
 		
+		# Configure navigation mesh settings
+		nav_mesh.agent_height = 2.0
+		nav_mesh.agent_radius = 0.5
+		nav_mesh.agent_max_climb = 0.5
+		nav_mesh.agent_max_slope = 45.0
+		nav_mesh.cell_size = 0.25
+		nav_mesh.cell_height = 0.25
+		nav_mesh.edge_max_length = 12.0
+		nav_mesh.edge_max_error = 1.3
+		
+		nav_region.navigation_mesh = nav_mesh
+	
+	# Bake navigation mesh
+	if nav_region.navigation_mesh:
+		nav_region.bake_navigation_mesh()
+	
+	return nav_region
+
+static func create_navigation_obstacle(obstacle_node: Node3D) -> NavigationObstacle3D:
+	# Add NavigationObstacle3D to dynamic obstacles
+	var nav_obstacle = NavigationObstacle3D.new()
+	obstacle_node.add_child(nav_obstacle)
+	
+	# Configure obstacle
+	nav_obstacle.radius = 1.0
+	nav_obstacle.height = 2.0
+	
+	return nav_obstacle
+
+static func debug_navigation(nav_region: NavigationRegion3D):
+	# Enable debug visualization
+	nav_region.debug_enabled = true
+	
+	# You can also use NavigationServer3D for more debug options
+	NavigationServer3D.set_debug_enabled(true)
