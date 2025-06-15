@@ -1,3 +1,4 @@
+# player/WeaponManager.gd
 extends Node3D
 
 # Weapon types enum
@@ -15,6 +16,7 @@ const WEAPON_STATS = {
 		"range": 3.0,
 		"cooldown": 0.5,
 		"knockback": 10.0,
+		"recoil": 0.0,
 		"color": Color(0, 1, 0),  # Green
 		"name": "Sword"
 	},
@@ -22,6 +24,7 @@ const WEAPON_STATS = {
 		"damage": 25,
 		"range": 50.0,
 		"cooldown": 0.3,
+		"recoil": 5.0,  # Recoil force
 		"color": Color(1, 1, 0),  # Yellow
 		"name": "Pistol"
 	},
@@ -31,6 +34,7 @@ const WEAPON_STATS = {
 		"cooldown": 0.8,
 		"spread": 15.0,  # Degrees
 		"pellets": 5,
+		"recoil": 12.0,  # Higher recoil
 		"color": Color(1, 0.5, 0),  # Orange
 		"name": "Shotgun"
 	},
@@ -38,6 +42,7 @@ const WEAPON_STATS = {
 		"damage": 100,  # Set in mortar shell
 		"range": 80.0,
 		"cooldown": 2.0,
+		"recoil": 8.0,
 		"color": Color(1, 0, 0),  # Red
 		"name": "Mortar"
 	}
@@ -48,12 +53,15 @@ const WEAPON_STATS = {
 
 @onready var sword_hitbox: Area3D = $SwordHitbox
 @onready var hitscan_raycast: RayCast3D = $HitscanRaycast
-# @onready var shotgun_raycasts: Node3D = $ShotgunRaycasts
 
 var current_weapon: WeaponType = WeaponType.PISTOL
 var can_fire: bool = true
 var owner_body: RigidBody3D
 var mesh_instance: MeshInstance3D 
+
+# Recoil system
+var recoil_recovery_speed: float = 10.0
+var current_recoil: Vector3 = Vector3.ZERO
 
 signal weapon_changed(weapon_type: WeaponType)
 signal weapon_fired
@@ -69,13 +77,17 @@ func _ready():
 	# Setup raycasts
 	hitscan_raycast.target_position = Vector3(0, 0, -WEAPON_STATS[WeaponType.PISTOL]["range"])
 	
-	# Setup shotgun pellets with spread
-	#for i in range(shotgun_raycasts.get_child_count()):
-		#var pellet = shotgun_raycasts.get_child(i) as RayCast3D
-		#pellet.target_position = Vector3(0, 0, -WEAPON_STATS[WeaponType.SHOTGUN]["range"])
-	
 	# Set initial weapon
 	switch_weapon(WeaponType.PISTOL)
+
+func _physics_process(delta: float):
+	# Apply recoil recovery
+	if current_recoil.length() > 0.1:
+		current_recoil = current_recoil.move_toward(Vector3.ZERO, recoil_recovery_speed * delta)
+		
+		# Apply recoil to player (subtle camera shake effect)
+		if owner_body:
+			owner_body.apply_central_impulse(current_recoil * delta * 0.1)
 
 func _input(event):
 	# Weapon switching
@@ -108,10 +120,13 @@ func fire():
 			_fire_sword()
 		WeaponType.PISTOL:
 			_fire_pistol()
-		#WeaponType.SHOTGUN:
-			#_fire_shotgun()
+		WeaponType.SHOTGUN:
+			_fire_shotgun()
 		WeaponType.MORTAR:
 			_fire_mortar()
+	
+	# Apply recoil
+	_apply_recoil()
 	
 	can_fire = false
 	weapon_fired.emit()
@@ -120,12 +135,37 @@ func fire():
 	await get_tree().create_timer(WEAPON_STATS[current_weapon]["cooldown"]).timeout
 	can_fire = true
 
+func _apply_recoil():
+	"""Apply weapon recoil"""
+	var stats = WEAPON_STATS[current_weapon]
+	var recoil_force = stats.get("recoil", 0.0)
+	
+	if recoil_force > 0 and owner_body:
+		# Calculate recoil direction (opposite to facing direction)
+		var recoil_direction = owner_body.transform.basis.z  # Forward is -z, so z is backward
+		recoil_direction.y = 0  # Keep horizontal
+		recoil_direction = recoil_direction.normalized()
+		
+		# Add some random spread to recoil
+		var spread = deg_to_rad(5.0)  # 5 degrees spread
+		recoil_direction = recoil_direction.rotated(Vector3.UP, randf_range(-spread, spread))
+		
+		# Apply recoil impulse
+		var recoil_impulse = recoil_direction * recoil_force
+		owner_body.apply_central_impulse(recoil_impulse)
+		
+		# Store recoil for gradual recovery
+		current_recoil = recoil_impulse
+		
+		print("Applied recoil: ", recoil_force, " force")
+
 func _fire_sword():
 	sword_hitbox.monitoring = true
 	
 	# Visual feedback - quick forward thrust
 	var tween = create_tween()
-	tween.tween_property(owner_body, "position", owner_body.position + owner_body.transform.basis.z * -0.5, 0.1)
+	var thrust_direction = -owner_body.transform.basis.z * 0.5
+	tween.tween_property(owner_body, "position", owner_body.position + thrust_direction, 0.1)
 	tween.tween_property(owner_body, "position", owner_body.position, 0.1)
 	
 	await get_tree().create_timer(0.1).timeout
@@ -159,33 +199,39 @@ func _fire_pistol():
 		# Visual feedback at hit point
 		_create_hit_effect(hitscan_raycast.get_collision_point())
 
-#func _fire_shotgun():
-	#var stats = WEAPON_STATS[WeaponType.SHOTGUN]
-	#var spread = deg_to_rad(stats["spread"])
-	#var target = _find_best_target()
-	#
-	#for i in range(shotgun_raycasts.get_child_count()):
-		#var pellet = shotgun_raycasts.get_child(i) as RayCast3D
-		#
-		## Apply spread
-		#var spread_x = randf_range(-spread, spread)
-		#var spread_y = randf_range(-spread, spread)
-		#
-		#if target:
-			#_aim_at_target(pellet, target)
-			#pellet.rotation.x += spread_x
-			#pellet.rotation.y += spread_y
-		#else:
-			#pellet.rotation = Vector3(spread_x, spread_y, 0)
-		#
-		#pellet.force_raycast_update()
-		#
-		#if pellet.is_colliding():
-			#var hit = pellet.get_collider()
-			#if hit.has_method("take_damage"):
-				#hit.take_damage(stats["damage"])
-			#
-			#_create_hit_effect(pellet.get_collision_point())
+func _fire_shotgun():
+	# Similar to pistol but with multiple rays
+	var stats = WEAPON_STATS[WeaponType.SHOTGUN]
+	var spread = deg_to_rad(stats["spread"])
+	var target = _find_best_target()
+	
+	# Fire multiple pellets
+	for i in range(stats["pellets"]):
+		# Apply spread
+		var spread_x = randf_range(-spread, spread)
+		var spread_y = randf_range(-spread, spread)
+		
+		var temp_raycast = RayCast3D.new()
+		add_child(temp_raycast)
+		temp_raycast.target_position = Vector3(0, 0, -stats["range"])
+		
+		if target:
+			_aim_at_target(temp_raycast, target)
+			temp_raycast.rotation.x += spread_x
+			temp_raycast.rotation.y += spread_y
+		else:
+			temp_raycast.rotation = Vector3(spread_x, spread_y, 0)
+		
+		temp_raycast.force_raycast_update()
+		
+		if temp_raycast.is_colliding():
+			var hit = temp_raycast.get_collider()
+			if hit.has_method("take_damage"):
+				hit.take_damage(stats["damage"])
+			
+			_create_hit_effect(temp_raycast.get_collision_point())
+		
+		temp_raycast.queue_free()
 
 func _fire_mortar():
 	if not mortar_shell_scene:
@@ -193,15 +239,12 @@ func _fire_mortar():
 		return
 	
 	# Use existing mortar code from character.gd
-	# This will call the parent's mortar firing method
 	if owner_body.has_method("_fire_mortar_at_cursor"):
 		owner_body._fire_mortar_at_cursor()
 
 func _find_best_target() -> Node3D:
 	# Find enemies in range
 	var enemies = GameManagerGlobal.get_targets()
-
-	print(enemies)
 	
 	var best_target = null
 	var best_distance = INF
@@ -221,8 +264,6 @@ func _find_best_target() -> Node3D:
 			best_distance = distance
 			best_target = enemy
 	
-	print(best_target)
-	
 	return best_target
 
 func _aim_at_target(raycast: RayCast3D, target: Node3D):
@@ -234,6 +275,8 @@ func _aim_at_target(raycast: RayCast3D, target: Node3D):
 		raycast.look_at(raycast.global_position + to_target, Vector3.UP)
 
 func _create_hit_effect(position: Vector3):
-	# Create a simple hit effect (you can expand this)
-	# For now, just print the hit location
+	# Create a simple hit effect
 	print("Hit at: ", position)
+	
+	# You can add particle effects here later
+	# For now, just print the hit location

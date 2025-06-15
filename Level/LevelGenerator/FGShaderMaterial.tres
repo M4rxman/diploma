@@ -9,10 +9,14 @@ input_name = "color"
 [sub_resource type="VisualShaderNodeVectorDecompose" id="3"]
 
 [sub_resource type="VisualShaderNodeColorParameter" id="4"]
+output_port_for_preview = 0
 parameter_name = "ForegroundColor"
+default_value_enabled = true
+default_value = Color(0.480861, 0.220541, 0.535716, 1)
 
 [sub_resource type="VisualShaderNodeColorParameter" id="5"]
 parameter_name = "BackgroundColor"
+default_value = Color(0.543334, 0.359084, 0.607856, 1)
 
 [sub_resource type="VisualShaderNodeMix" id="6"]
 default_input_values = [0, Vector3(0, 0, 0), 1, Vector3(1, 1, 1), 2, 0.0]
@@ -40,7 +44,7 @@ code = "shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
 uniform vec4 BackgroundColor : source_color;
-uniform vec4 ForegroundColor : source_color;
+uniform vec4 ForegroundColor : source_color = vec4(0.480861, 0.220541, 0.535716, 1.000000);
 uniform float LevelDepth;
 
 
@@ -110,7 +114,7 @@ void fragment() {
 
 }
 "
-graph_offset = Vector2(-92.1792, -22.7088)
+graph_offset = Vector2(-299.924, -310.263)
 nodes/vertex/0/position = Vector2(1000, 100)
 nodes/vertex/2/node = SubResource("9")
 nodes/vertex/2/position = Vector2(60, 240)
@@ -123,19 +127,19 @@ nodes/vertex/5/position = Vector2(640, 160)
 nodes/vertex/connections = PackedInt32Array(3, 0, 4, 0, 2, 0, 4, 1, 4, 0, 5, 0, 2, 0, 5, 1, 5, 0, 0, 6)
 nodes/fragment/0/position = Vector2(820, -160)
 nodes/fragment/3/node = SubResource("2")
-nodes/fragment/3/position = Vector2(-80, 80)
+nodes/fragment/3/position = Vector2(-20, -40)
 nodes/fragment/4/node = SubResource("3")
 nodes/fragment/4/position = Vector2(-40, 140)
 nodes/fragment/5/node = SubResource("4")
-nodes/fragment/5/position = Vector2(-20, -100)
+nodes/fragment/5/position = Vector2(-360, -180)
 nodes/fragment/6/node = SubResource("5")
-nodes/fragment/6/position = Vector2(-60, -180)
+nodes/fragment/6/position = Vector2(-80, -320)
 nodes/fragment/7/node = SubResource("6")
-nodes/fragment/7/position = Vector2(560, -180)
+nodes/fragment/7/position = Vector2(580, -260)
 nodes/fragment/8/node = SubResource("7")
-nodes/fragment/8/position = Vector2(320, -20)
+nodes/fragment/8/position = Vector2(340, 0)
 nodes/fragment/9/node = SubResource("8")
-nodes/fragment/9/position = Vector2(520, -40)
+nodes/fragment/9/position = Vector2(560, 20)
 nodes/fragment/10/node = SubResource("1")
 nodes/fragment/10/position = Vector2(160, 260)
 nodes/fragment/connections = PackedInt32Array(3, 0, 4, 0, 7, 0, 0, 0, 5, 0, 7, 1, 6, 0, 7, 0, 4, 2, 8, 0, 8, 0, 9, 0, 9, 0, 7, 2, 10, 0, 8, 1)

@@ -1,17 +1,20 @@
+# player/character.gd - Fixed movement section
 extends RigidBody3D
 
-@onready var feet = $Feet  # RayCast3D for floor detection
+@onready var feet = $Feet  
 @onready var interaction_ray = $InteractionRay 
 @onready var weapon_system = $WeaponManager
 
-# Mortar attack variables (keeping existing functionality)
-@export var mortar_shell_scene: PackedScene  # Assign mortar_shell.tscn in inspector
-@export var mortar_launch_angle: float = 45.0  # Launch angle in degrees
+@export var mortar_shell_scene: PackedScene
+@export var mortar_launch_angle: float = 45.0
 @export var mortar_min_range: float = 10.0
 @export var mortar_max_range: float = 80.0
-@onready var launch_point = $"."  # Add a Marker3D child node for launch position
+@onready var launch_point = $"."
 
-var health := 100  # Додаємо змінну здоров'я
+var health := 100
+var max_health := 100
+var ammo := 30  # Starting ammo
+var max_ammo := 30
 
 const TARGET_SPEED := 10.0
 const TARGET_JUMP := 70.0
@@ -21,27 +24,29 @@ var dodge_ready = true
 var is_on_floor = true 
 var _pid := Pid3D.new(30.0, 0.05, 2.0)
 
-# Called when the node enters the scene tree for the first time.
+signal health_changed(new_health: int, max_health: int)
+signal ammo_changed(new_ammo: int, max_ammo: int)
+
 func _ready() -> void:
-	# Set up physics properties for JoltPhysics
 	gravity_scale = 1.0
-	linear_damp = 0.5  # Some base damping
-	angular_damp = 5.0  # Prevent rotation
+	linear_damp = 0.5
+	angular_damp = 5.0
 	
-	# Add to player group for enemy targeting
 	add_to_group("player")
 	
-	# Create launch point if it doesn't exist
 	if not launch_point:
 		launch_point = Marker3D.new()
 		launch_point.name = "LaunchPoint"
-		launch_point.position = Vector3(0, 1.5, 0.5)  # Slightly forward and up
+		launch_point.position = Vector3(0, 1.5, 0.5)
 		add_child(launch_point)
 	
-	# Connect weapon system signals
 	if weapon_system:
 		weapon_system.mortar_shell_scene = mortar_shell_scene
 		weapon_system.weapon_changed.connect(_on_weapon_changed)
+	
+	# Emit initial values
+	health_changed.emit(health, max_health)
+	ammo_changed.emit(ammo, max_ammo)
 
 func _physics_process(delta: float) -> void:
 	_update_floor_detection()
@@ -49,30 +54,30 @@ func _physics_process(delta: float) -> void:
 	
 	# Fire current weapon
 	if Input.is_action_just_pressed("attack"):
-		if weapon_system:
+		if weapon_system and ammo > 0:
 			weapon_system.fire()
+			ammo -= 1
+			ammo_changed.emit(ammo, max_ammo)
 	
 	# Interact
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
 	
-	# Movement
+	# FIXED MOVEMENT - Corrected the direction mapping
 	var direction = Vector3(
-		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
 		0.0,
-		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
+		Input.get_action_strength("move_back") - Input.get_action_strength("move_forward")
 	).normalized()
 	
 	# Apply movement
 	if direction.length() > 0.1:
 		var target_velocity = direction * TARGET_SPEED
-		
-		# Don't modify Y component - let gravity handle it
 		target_velocity.y = linear_velocity.y
 		
 		var velocity_error = Vector3(
 			target_velocity.x - linear_velocity.x,
-			0.0,  # Don't try to control Y velocity
+			0.0,
 			target_velocity.z - linear_velocity.z
 		)
 		
@@ -84,7 +89,6 @@ func _physics_process(delta: float) -> void:
 		_jump()
 
 func _update_floor_detection():
-	"""Update floor detection using RayCast"""
 	if feet.is_colliding():
 		is_on_floor = true
 	else:
@@ -98,18 +102,16 @@ func _jump() -> void:
 
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor:
-		# Apply gravity impulse
 		apply_central_impulse(Vector3.DOWN * TARGET_GRAVITY * delta)
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
-	# Get movement input
+	# FIXED MOVEMENT INPUT - Corrected the direction mapping
 	var move_input = Vector3(
-		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
 		0.0,
-		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
+		Input.get_action_strength("move_back") - Input.get_action_strength("move_forward")
 	)
 	
-	# Stop when no input - but only affect X and Z
 	if move_input.length() < 0.1:
 		var stop_speed = 0.4
 		state.linear_velocity.x = lerp(state.linear_velocity.x, 0.0, stop_speed)
@@ -117,10 +119,24 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 func take_damage(amount):
 	health -= amount
+	health = max(0, health)  # Clamp to 0
+	health_changed.emit(health, max_health)
 	print("Player took ", amount, " damage. Health: ", health)
 	if health <= 0:
 		print("Player died!")
-		queue_free()
+		# You can add death logic here
+
+func heal(amount):
+	health += amount
+	health = min(max_health, health)  # Clamp to max
+	health_changed.emit(health, max_health)
+	print("Player healed ", amount, ". Health: ", health)
+
+func add_ammo(amount):
+	ammo += amount
+	ammo = min(max_ammo, ammo)  # Clamp to max
+	ammo_changed.emit(ammo, max_ammo)
+	print("Player gained ", amount, " ammo. Ammo: ", ammo)
 
 func _try_interact():
 	if interaction_ray.is_colliding():
@@ -131,16 +147,13 @@ func _try_interact():
 
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
-	# You can add UI updates or other effects here
 
-# Mortar firing functions (called by weapon system)
+# Mortar firing functions
 func _fire_mortar_at_cursor():
-	"""Fire a mortar at the cursor position"""
 	if not mortar_shell_scene:
 		print("Mortar shell scene not assigned!")
 		return
 	
-	# Get target position from mouse cursor
 	var camera = get_viewport().get_camera_3d()
 	if not camera:
 		print("No camera found!")
@@ -151,17 +164,8 @@ func _fire_mortar_at_cursor():
 	var to = from + camera.project_ray_normal(mouse_pos) * 2000
 	
 	var space_state = get_world_3d().direct_space_state
-	var ray_intersection = PhysicsRayQueryParameters3D.new()
-	ray_intersection.from = from
-	ray_intersection.to = to
-	var intersection = space_state.intersect_ray(ray_intersection)
-	
-	if not intersection.is_empty():
-		var pos = intersection.position
-		var horizontal_stabilization =  Vector3(pos.x, $".".position.y, pos.z)
-		
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.exclude = [self]  # Exclude the player
+	query.exclude = [self]
 	var result = space_state.intersect_ray(query)
 	
 	if result:
@@ -170,13 +174,11 @@ func _fire_mortar_at_cursor():
 		print("No target found under cursor!")
 
 func _fire_mortar_at_position(target_pos: Vector3):
-	"""Fire a mortar shell at specified world position"""
 	if not mortar_shell_scene:
 		return
 	
 	var distance = global_position.distance_to(target_pos)
 	
-	# Check range
 	if distance < mortar_min_range:
 		print("Target too close! Min range: ", mortar_min_range)
 		return
@@ -184,21 +186,17 @@ func _fire_mortar_at_position(target_pos: Vector3):
 		print("Target too far! Max range: ", mortar_max_range)
 		return
 	
-	# Spawn mortar shell
 	var shell = mortar_shell_scene.instantiate()
 	get_tree().current_scene.add_child(shell)
 	shell.global_position = launch_point.global_position
 	
-	# Calculate launch velocity
 	var launch_velocity = _calculate_mortar_trajectory(target_pos)
 	
 	if launch_velocity.length() > 0:
-		# Face the target direction
 		var look_direction = Vector3(target_pos.x - global_position.x, 0, target_pos.z - global_position.z).normalized()
 		if look_direction.length() > 0:
 			look_at(global_position + look_direction, Vector3.UP)
 		
-		# Launch the shell
 		if shell.has_method("launch"):
 			shell.launch(launch_velocity.normalized(), launch_velocity.length())
 		else:
@@ -206,7 +204,6 @@ func _fire_mortar_at_position(target_pos: Vector3):
 			shell.queue_free()
 			return
 		
-		# Visual feedback - small recoil
 		var recoil = -look_direction * 2.0
 		apply_impulse(recoil)
 		
@@ -216,31 +213,24 @@ func _fire_mortar_at_position(target_pos: Vector3):
 		shell.queue_free()
 
 func _calculate_mortar_trajectory(target_pos: Vector3) -> Vector3:
-	"""Calculate launch velocity for mortar trajectory"""
 	var start_pos = launch_point.global_position
 	var displacement = target_pos - start_pos
 	var horizontal_distance = Vector2(displacement.x, displacement.z).length()
 	var vertical_distance = displacement.y
 	
-	# Get gravity
 	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	var angle_rad = deg_to_rad(mortar_launch_angle)
 	
-	# Calculate velocity needed using projectile motion formula
 	var velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
 	
-	# Check if trajectory is possible
 	if velocity_squared <= 0:
-		# Try with higher angle for impossible shots
 		angle_rad = deg_to_rad(70.0)
 		velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
 		
 		if velocity_squared <= 0:
-			return Vector3.ZERO  # Impossible shot
+			return Vector3.ZERO
 	
 	var velocity = sqrt(velocity_squared)
-	
-	# Calculate launch direction
 	var horizontal_dir = Vector3(displacement.x, 0, displacement.z).normalized()
 	var launch_direction = (horizontal_dir * cos(angle_rad) + Vector3.UP * sin(angle_rad)).normalized()
 	

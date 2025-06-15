@@ -177,7 +177,7 @@ func update_obstacle_material():
 		return
 		
 	var temp_obstacle = ObstacleScene.instantiate()
-	if temp_obstacle.has_property("material"):
+	if temp_obstacle.get_material():
 		shader_material = temp_obstacle.material as ShaderMaterial
 		if shader_material:
 			shader_material.set_shader_parameter("ForegroundColor", foreground_color)
