@@ -141,6 +141,15 @@ func start_new_game():
 	game_started = true
 	level_completed = false
 	
+	# IMPORTANT: Reset player stats when starting new game
+	if player:
+		if player.has_method("heal"):
+			player.heal(player.max_health)  # Full heal
+		if player.has_method("add_ammo"):
+			player.ammo = player.max_ammo  # Full ammo reload
+			player.ammo_changed.emit(player.ammo, player.max_ammo)
+		print("Player stats reset - Health: ", player.health, " Ammo: ", player.ammo)
+	
 	# Position player at center of generated level
 	if level_manager and level_manager.get_current_level():
 		var center_world_pos = Vector3(0, 3, 0)  # Center of map, elevated for safety
@@ -150,8 +159,9 @@ func start_new_game():
 	# Adjust camera position for better view
 	if has_node("Camera3D"):
 		var camera = $Camera3D
-		camera.global_position = Vector3(0, 20, 15)
-		camera.fov = 60.0
+		camera.global_position = Vector3(0, 25, 15)
+		camera.look_at(Vector3(0, 0, 0), Vector3.UP)
+		camera.fov = 45.0
 
 func save_current_game():
 	"""Save the current game state"""
@@ -197,6 +207,10 @@ func regenerate_current_level():
 		print("Regenerating level...")
 		level_completed = false
 		current_wave = 0
+		
+		# IMPORTANT: Clear death messages before regenerating
+		clear_ui_messages()
+		
 		level_manager.regenerate_level()
 
 func get_current_enemies() -> Array:

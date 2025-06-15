@@ -6,9 +6,9 @@ extends RigidBody3D
 @onready var weapon_system = $WeaponManager
 
 @export var mortar_shell_scene: PackedScene
-@export var mortar_launch_angle: float = 45.0
-@export var mortar_min_range: float = 10.0
-@export var mortar_max_range: float = 80.0
+@export var mortar_launch_angle: float = 60.0  # INCREASED angle for higher arc
+@export var mortar_min_range: float = 3.0      # REDUCED min range
+@export var mortar_max_range: float = 25.0     # REDUCED max range
 @onready var launch_point = $"."
 
 var health := 100
@@ -217,6 +217,20 @@ func respawn():
 	ammo_changed.emit(ammo, max_ammo)
 	player_respawned.emit()
 	
+	# IMPORTANT: Clear any lingering death UI
+	var game_ui = get_tree().get_first_node_in_group("game_ui")
+	if not game_ui:
+		# Try to find it in the scene tree
+		var ui_nodes = get_tree().get_nodes_in_group("ui")
+		for ui_node in ui_nodes:
+			if ui_node.has_method("clear_all_messages"):
+				game_ui = ui_node
+				break
+	
+	if game_ui and game_ui.has_method("clear_all_messages"):
+		game_ui.clear_all_messages()
+		print("Cleared death messages on respawn")
+	
 	print("Player respawned!")
 
 func heal(amount):
@@ -264,9 +278,9 @@ func _fire_mortar_at_cursor():
 	var mouse_pos = get_viewport().get_mouse_position()
 	print("Mouse position: ", mouse_pos)
 	
-	# Create ray from camera through mouse position
+	# Create ray from camera through mouse position - SHORTENED RANGE
 	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * 1000  # Reduced distance for better accuracy
+	var to = from + camera.project_ray_normal(mouse_pos) * 100  # REDUCED from 1000 to 100
 	
 	print("Ray from: ", from, " to: ", to)
 	
@@ -282,8 +296,8 @@ func _fire_mortar_at_cursor():
 		print("Hit target at: ", result.position)
 		_fire_mortar_at_position(result.position)
 	else:
-		# If no collision, fire at max range in that direction
-		var fallback_target = from + camera.project_ray_normal(mouse_pos) * mortar_max_range
+		# If no collision, fire at much closer range in that direction
+		var fallback_target = from + camera.project_ray_normal(mouse_pos) * 20  # REDUCED from mortar_max_range to 20
 		fallback_target.y = 0  # Place on ground level
 		print("No collision, using fallback target: ", fallback_target)
 		_fire_mortar_at_position(fallback_target)

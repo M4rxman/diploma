@@ -11,9 +11,9 @@ enum WeaponType {
 const WEAPON_STATS = {
 	WeaponType.SWORD: {
 		"damage": 50,
-		"range": 2.5,
+		"range": 3.0,
 		"cooldown": 0.5,
-		"knockback": 80.0,  # Further reduced
+		"knockback": 100.0,  # Further reduced
 		"color": Color(0, 1, 0),
 		"name": "Sword"
 	},

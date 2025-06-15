@@ -12,7 +12,7 @@ const TARGET_GRAVITY = 200.0
 
 # Combat settings - reduced knockback and damage
 @export var attack_damage := 15
-@export var attack_range := 2.0
+@export var attack_range := 1.0
 @export var attack_cooldown := 1.5
 @export var knockback_force := 3.0  # Reduced knockback
 

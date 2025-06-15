@@ -55,19 +55,25 @@ func create_default_wave():
 	start_next_wave()
 
 func start_next_wave():
-	if current_wave_number >= waves.size() - 1:
+	# CRITICAL FIX: Check if we've completed all waves BEFORE incrementing
+	if current_wave_number + 1 >= waves.size():
 		print("LevelSpawner: All waves completed!")
 		level_complete.emit()
 		return
 	
 	enemies_killed_this_wave = 0
 	current_wave_number += 1
-	game_started = true  # NOW the game has actually started
 	
 	if current_wave_number < waves.size():
-		wave_update.emit(current_wave_number)
 		current_wave = waves[current_wave_number]
 		enemies_remaining_to_spawn = current_wave.num_enemies
+		
+		# CRITICAL: Only set game_started to true AFTER we have a valid wave with enemies
+		if current_wave.num_enemies > 0:
+			game_started = true
+			print("LevelSpawner: Game officially started with wave ", current_wave_number + 1)
+		
+		wave_update.emit(current_wave_number)
 		
 		print("LevelSpawner: Starting wave ", current_wave_number + 1, " with ", enemies_remaining_to_spawn, " enemies")
 		
@@ -170,8 +176,9 @@ func _on_enemy_died(enemy):
 			drop_item.emit(current_wave.DropItem)
 			print("LevelSpawner: Item dropped!")
 	
-	# IMPORTANT: Check if wave is complete - BUT ONLY IF GAME HAS STARTED
-	if not game_started:
+	# CRITICAL FIX: Only check wave completion if game started AND we have spawned enemies
+	if not game_started or current_wave_number < 0:
+		print("LevelSpawner: Game not started or no valid wave, ignoring death")
 		return
 		
 	var all_spawned = (enemies_remaining_to_spawn <= 0)
@@ -179,7 +186,8 @@ func _on_enemy_died(enemy):
 	
 	print("LevelSpawner: Wave check - All spawned: ", all_spawned, " All dead: ", all_dead)
 	
-	if all_spawned and all_dead:
+	# ADDITIONAL CHECK: Make sure we actually had enemies to begin with
+	if all_spawned and all_dead and current_wave and current_wave.num_enemies > 0:
 		print("LevelSpawner: Wave ", current_wave_number + 1, " completed! Starting next wave...")
 		await get_tree().create_timer(2.0).timeout  # Brief pause
 		start_next_wave()

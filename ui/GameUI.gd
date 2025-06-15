@@ -17,6 +17,10 @@ func _ready():
 	# Create UI elements programmatically
 	setup_ui_elements()
 	
+	# Add to groups for easy finding
+	add_to_group("ui")
+	add_to_group("game_ui")
+	
 	# Find player and game manager
 	player = get_tree().get_first_node_in_group("player")
 	game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -224,10 +228,18 @@ func clear_all_messages():
 			"LEVEL COMPLETE" in child.text or 
 			"YOU DIED" in child.text or 
 			"VICTORY" in child.text or
-			"Wave" in child.text and "COMPLETE" in child.text
+			"Wave" in child.text and "COMPLETE" in child.text or
+			"Press SPACE to respawn" in child.text or
+			"Press ESC to quit" in child.text
 		):
 			child.queue_free()
 			print("Removed temporary message: ", child.text)
+	
+	# Also remove any ColorRect overlays (death screens)
+	for child in get_children():
+		if child is ColorRect and child.color == Color(0, 0, 0, 0.8):
+			child.queue_free()
+			print("Removed death screen overlay")
 	
 	# Reset wave display to wave 1
 	if wave_label:
