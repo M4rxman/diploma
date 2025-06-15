@@ -17,6 +17,7 @@ shader_parameter/time_speed = 1.0
 shader_parameter/base_color = Color(0, 1, 0, 1)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_jy02s"]
+lightmap_size_hint = Vector2i(17, 9)
 material = SubResource("ShaderMaterial_h3uvl")
 height = 1.0
 radial_segments = 6
@@ -45,6 +46,8 @@ script = ExtResource("1_5bxk4")
 mortar_shell_scene = ExtResource("2_l3lwv")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+layers = 3
+sorting_offset = 10.0
 mesh = SubResource("CapsuleMesh_jy02s")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

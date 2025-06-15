@@ -4,7 +4,7 @@ class_name Wave
 
 @export var num_enemies: int = 3
 @export var second_between_spawns: float = 2.0
-@export var move_speed: float = 2.0
+@export var move_speed: float = 1.0
 @export var damage: int = 1
 @export var health: float = 10.0
 

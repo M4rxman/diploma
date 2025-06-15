@@ -1,4 +1,4 @@
-# Spawning/LevelSpawner.gd
+# Spawning/LevelSpawner.gd - Fixed wave completion detection
 extends Node3D
 
 class_name LevelSpawner
@@ -25,7 +25,7 @@ signal wave_update(wave_number: int)
 signal drop_item(item_scene: PackedScene)
 
 func _ready():
-	# Create timer if it doesn't exist
+	# Create timer
 	if not timer:
 		timer = Timer.new()
 		timer.name = "SpawnerTimer"
@@ -33,7 +33,7 @@ func _ready():
 		timer.timeout.connect(_on_timer_timeout)
 		print("LevelSpawner: Created timer")
 	
-	# Small delay before starting first wave
+	# Wait a bit before starting
 	await get_tree().create_timer(1.0).timeout
 	
 	if waves.size() > 0:
@@ -44,11 +44,10 @@ func _ready():
 		create_default_wave()
 
 func create_default_wave():
-	"""Create a default wave if none exist"""
 	var default_wave = Wave.new()
 	default_wave.num_enemies = 3
 	default_wave.second_between_spawns = 2.0
-	default_wave.move_speed = 2.0
+	default_wave.move_speed = 3.0
 	default_wave.damage = 20
 	default_wave.health = 100
 	waves = [default_wave]
@@ -56,7 +55,6 @@ func create_default_wave():
 
 func start_next_wave():
 	if current_wave_number >= waves.size() - 1:
-		# All waves completed
 		print("LevelSpawner: All waves completed!")
 		level_complete.emit()
 		return
@@ -78,19 +76,18 @@ func start_next_wave():
 		if current_wave.should_drop(enemies_killed_this_wave):
 			drop_item.emit(current_wave.DropItem)
 	else:
-		# Level complete
 		print("LevelSpawner: Level completed!")
 		level_complete.emit()
 
 func reset():
-	"""Reset spawner to beginning"""
 	current_wave_number = -1
+	
+	# Clear existing enemies
 	for enemy in active_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	active_enemies.clear()
 	
-	# Small delay before starting
 	await get_tree().create_timer(0.5).timeout
 	start_next_wave()
 
@@ -103,30 +100,32 @@ func spawn_enemy():
 		print("LevelSpawner: No navigation map assigned!")
 		return
 	
-	# Spawn enemy
+	# Get spawn position
+	var location: Vector3 = navmap.get_random_empty_vec3()
+	
+	# Create enemy
 	var enemy = enemy_scene.instantiate()
 	
-	# Set enemy characteristics based on wave
+	# Set enemy characteristics
 	if enemy.has_method("set_health"):
 		enemy.set_health(current_wave.health)
-	elif enemy.get("health"):
+	elif enemy.get("health") != null:
 		enemy.health = current_wave.health
 		
 	if enemy.has_method("set_damage"):
 		enemy.set_damage(current_wave.damage)
-	elif enemy.get("damage"):
+	elif enemy.get("damage") != null:
 		enemy.damage = current_wave.damage
 		
 	if enemy.has_method("set_speed"):
 		enemy.set_speed(current_wave.move_speed)
-	elif enemy.get("TARGET_SPEED"):
+	elif enemy.get("TARGET_SPEED") != null:
 		enemy.TARGET_SPEED = current_wave.move_speed
 	
-	# Get spawn position
-	var location: Vector3 = navmap.get_random_empty_vec3()
+	# Position enemy
 	enemy.global_position = location + Vector3(0, 1, 0)
 	
-	# Add enemy to scene
+	# Add to scene
 	var scene_root = get_tree().current_scene
 	scene_root.add_child(enemy)
 	
@@ -135,32 +134,48 @@ func spawn_enemy():
 		enemy._set_ai_to_true()
 		print("LevelSpawner: Enabled AI for enemy at ", location)
 	
-	# Add to group
+	# Add to groups
 	enemy.add_to_group("enemies")
 	
-	# Connect to enemy death
+	# IMPORTANT: Connect to enemy death signal
 	if enemy.has_signal("died"):
 		enemy.died.connect(_on_enemy_died.bind(enemy))
+		print("LevelSpawner: Connected to enemy death signal")
+	else:
+		print("LevelSpawner: WARNING - Enemy has no 'died' signal!")
 	
 	active_enemies.append(enemy)
 	enemies_remaining_to_spawn -= 1
 	
-	print("LevelSpawner: Spawned enemy. Remaining: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size())
+	print("LevelSpawner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size())
 
 func _on_enemy_died(enemy):
-	active_enemies.erase(enemy)
+	"""Handle enemy death - CRITICAL for wave progression"""
+	print("LevelSpawner: Enemy died! Processing...")
+	
+	# Remove from active list
+	if enemy in active_enemies:
+		active_enemies.erase(enemy)
+	
 	enemies_killed_this_wave += 1
-	print("LevelSpawner: Enemy died. Killed: ", enemies_killed_this_wave, " Active: ", active_enemies.size())
 	
-	# Check if item should drop
+	print("LevelSpawner: Enemy removed. Killed this wave: ", enemies_killed_this_wave, " Active remaining: ", active_enemies.size())
+	
+	# Check for item drops
 	if current_wave and current_wave.should_drop(enemies_killed_this_wave):
-		drop_item.emit(current_wave.DropItem)
-		print("LevelSpawner: Item dropped!")
+		if current_wave.DropItem:
+			drop_item.emit(current_wave.DropItem)
+			print("LevelSpawner: Item dropped!")
 	
-	# Check if wave is complete
-	if enemies_remaining_to_spawn == 0 and active_enemies.is_empty():
-		print("LevelSpawner: Wave complete! Starting next wave...")
-		await get_tree().create_timer(2.0).timeout  # Brief pause between waves
+	# IMPORTANT: Check if wave is complete
+	var all_spawned = (enemies_remaining_to_spawn <= 0)
+	var all_dead = (active_enemies.size() == 0)
+	
+	print("LevelSpawner: Wave check - All spawned: ", all_spawned, " All dead: ", all_dead)
+	
+	if all_spawned and all_dead:
+		print("LevelSpawner: Wave ", current_wave_number + 1, " completed! Starting next wave...")
+		await get_tree().create_timer(2.0).timeout  # Brief pause
 		start_next_wave()
 
 func _on_timer_timeout():
@@ -168,13 +183,25 @@ func _on_timer_timeout():
 		spawn_enemy()
 	else:
 		timer.stop()
-		print("LevelSpawner: Finished spawning enemies for this wave")
+		print("LevelSpawner: Finished spawning all enemies for this wave")
 
 func get_enemies_remaining() -> int:
 	return enemies_remaining_to_spawn
 
 func get_active_enemy_count() -> int:
+	# Clean up invalid enemies from list
+	active_enemies = active_enemies.filter(func(enemy): return is_instance_valid(enemy))
 	return active_enemies.size()
 
 func get_current_wave_number() -> int:
-	return current_wave_number + 1  # +1 for display purposes
+	return current_wave_number + 1
+
+# Debug function to force wave completion
+func debug_complete_wave():
+	print("DEBUG: Force completing current wave")
+	for enemy in active_enemies:
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	active_enemies.clear()
+	enemies_remaining_to_spawn = 0
+	_on_enemy_died(null)  # Trigger wave completion check

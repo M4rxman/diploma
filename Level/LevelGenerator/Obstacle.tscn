@@ -3,5 +3,7 @@
 [ext_resource type="Material" uid="uid://dyp2hi6bb0leb" path="res://Level/LevelGenerator/FGShaderMaterial.tres" id="1"]
 
 [node name="CSGBox" type="CSGBox3D"]
+layers = 3
 use_collision = true
+collision_layer = 9
 material = ExtResource("1")
