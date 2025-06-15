@@ -1,84 +1,79 @@
-# player/character.gd - Fixed death system
+# player/character.gd - FIXED with correct inputs and no auto-mortar spawn
 extends RigidBody3D
 
 @onready var feet = $Feet  
 @onready var interaction_ray = $InteractionRay 
 @onready var weapon_system = $WeaponManager
-@onready var mesh_instance = $MeshInstance3D
 
 @export var mortar_shell_scene: PackedScene
 @export var mortar_launch_angle: float = 45.0
-@export var mortar_min_range: float = 5.0
-@export var mortar_max_range: float = 50.0
+@export var mortar_min_range: float = 10.0
+@export var mortar_max_range: float = 80.0
 @onready var launch_point = $"."
 
 var health := 100
 var max_health := 100
 var ammo := 30
 var max_ammo := 30
+var is_dead := false
 
 const TARGET_SPEED := 10.0
-const TARGET_JUMP := 15.0
+const TARGET_JUMP := 70.0
 const TARGET_GRAVITY := 200.0
 
 var dodge_ready = true
 var is_on_floor = true 
 var _pid := Pid3D.new(30.0, 0.05, 2.0)
-var jump_buffer_time := 0.0
-var is_dead := false  # Track death state
 
+# Signals
 signal health_changed(new_health: int, max_health: int)
 signal ammo_changed(new_ammo: int, max_ammo: int)
 signal player_died
+signal player_respawned
 
 func _ready() -> void:
 	gravity_scale = 1.0
 	linear_damp = 0.5
 	angular_damp = 5.0
 	
-	sleeping = false
-	can_sleep = false
-	
 	add_to_group("player")
 	
-	# Character visibility fix
-	if mesh_instance:
-		mesh_instance.visible = true
-		mesh_instance.layers = 2
-		mesh_instance.sorting_use_aabb_center = true
-		mesh_instance.sorting_offset = 10.0
-		print("Character mesh setup - Visible:", mesh_instance.visible)
-	
-	if feet:
-		feet.target_position = Vector3(0, -0.6, 0)
-		feet.enabled = true
-		feet.collision_mask = 1
-	
+	# Create launch point if it doesn't exist
 	if not launch_point:
 		launch_point = Marker3D.new()
 		launch_point.name = "LaunchPoint"
 		launch_point.position = Vector3(0, 1.5, 0.5)
 		add_child(launch_point)
 	
+	# Connect weapon system signals
 	if weapon_system:
 		weapon_system.mortar_shell_scene = mortar_shell_scene
 		weapon_system.weapon_changed.connect(_on_weapon_changed)
 	
+	# Set up feet raycast
+	if feet:
+		feet.target_position = Vector3(0, -1.0, 0)
+		feet.enabled = true
+	
+	# Remove any MortarShell child nodes that might be spawning automatically
+	for child in get_children():
+		if child.name == "MortarShell" or child.get_script() == mortar_shell_scene:
+			print("Removing auto-spawned mortar shell: ", child.name)
+			child.queue_free()
+	
+	# Emit initial values
 	health_changed.emit(health, max_health)
 	ammo_changed.emit(ammo, max_ammo)
 	
-	print("Player initialized at position: ", global_position)
+	print("Character mesh setup - Visible:", has_node("MeshInstance3D"))
+	print("Player initialized at position:", global_position)
 
 func _physics_process(delta: float) -> void:
-	# Don't process if dead
 	if is_dead:
 		return
 		
 	_update_floor_detection()
 	_apply_gravity(delta)
-	
-	if jump_buffer_time > 0:
-		jump_buffer_time -= delta
 	
 	# Fire current weapon
 	if Input.is_action_just_pressed("attack"):
@@ -91,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
 	
-	# Movement
+	# CORRECT MOVEMENT - FIXED AXES PROPERLY
 	var direction = Vector3(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
 		0.0,
@@ -112,33 +107,21 @@ func _physics_process(delta: float) -> void:
 		var correction_impulse = _pid.update(velocity_error, delta) * 0.01
 		apply_impulse(correction_impulse)
 	
-	# Jump input with buffer
-	if Input.is_action_just_pressed("jump"):
-		jump_buffer_time = 0.2
-	
-	if jump_buffer_time > 0 and is_on_floor:
+	# Jumping logic
+	if Input.is_action_just_pressed("jump"): 
 		_jump()
-		jump_buffer_time = 0
 
 func _update_floor_detection():
 	if feet and feet.is_colliding():
 		is_on_floor = true
-		var collision_point = feet.get_collision_point()
-		
-		var min_height = collision_point.y + 0.5
-		if global_position.y < min_height:
-			global_position.y = min_height
-			if linear_velocity.y < 0:
-				linear_velocity.y = 0
 	else:
 		is_on_floor = false
 
-func _jump() -> void:
-	if is_on_floor:
-		linear_velocity.y = 0
+func _jump() -> void: 
+	if is_on_floor and not is_dead:
 		apply_impulse(Vector3.UP * TARGET_JUMP)
 		is_on_floor = false
-		print("Jumped with force: ", TARGET_JUMP)
+		print("Jumped")
 
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor:
@@ -148,10 +131,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if is_dead:
 		return
 		
+	# CORRECT MOVEMENT INPUT - EXACT COPY FROM YOUR WORKING VERSION
 	var move_input = Vector3(
-		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
 		0.0,
-		Input.get_action_strength("move_back") - Input.get_action_strength("move_forward")
+		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
 	)
 	
 	if move_input.length() < 0.1:
@@ -160,7 +144,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		state.linear_velocity.z = lerp(state.linear_velocity.z, 0.0, stop_speed)
 
 func take_damage(amount):
-	# Prevent damage spam when already dead
 	if is_dead:
 		return
 		
@@ -169,50 +152,72 @@ func take_damage(amount):
 	health_changed.emit(health, max_health)
 	print("Player took ", amount, " damage. Health: ", health)
 	
-	if health <= 0 and not is_dead:
+	if health <= 0:
 		die()
 
 func die():
-	"""Handle player death properly"""
 	if is_dead:
-		return  # Already dead
+		return
 		
 	is_dead = true
 	print("Player died!")
 	player_died.emit()
 	
-	# Stop physics processing
-	set_physics_process(false)
+	if has_node("MeshInstance3D"):
+		var mesh = $MeshInstance3D
+		if mesh.material_override:
+			var material = mesh.material_override as ShaderMaterial
+			if material:
+				var tween = create_tween()
+				tween.tween_method(_change_death_color, 0.0, 1.0, 1.0)
 	
-	# Visual death effect
-	if mesh_instance:
-		var tween = create_tween()
-		tween.parallel().tween_property(mesh_instance, "modulate", Color.RED, 0.5)
-		tween.parallel().tween_property(self, "scale", Vector3(0.5, 0.5, 0.5), 1.0)
+	freeze = true
+	await get_tree().create_timer(2.0).timeout
+	offer_respawn()
 
-func respawn(spawn_position: Vector3):
-	"""Respawn the player"""
+func _change_death_color(progress: float):
+	if has_node("MeshInstance3D"):
+		var mesh = $MeshInstance3D
+		if mesh.material_override:
+			var material = mesh.material_override as ShaderMaterial
+			if material:
+				var death_color = Color.RED.lerp(Color.BLACK, progress)
+				material.set_shader_parameter("base_color", death_color)
+
+func offer_respawn():
+	print("Press SPACE to respawn or ESC for main menu")
+	
+	while is_dead:
+		if Input.is_action_just_pressed("jump"):
+			respawn()
+			break
+		elif Input.is_action_just_pressed("ui_cancel"):
+			get_tree().quit()
+			break
+		await get_tree().process_frame
+
+func respawn():
 	is_dead = false
 	health = max_health
 	ammo = max_ammo
+	freeze = false
 	
-	# Reset visuals
-	scale = Vector3.ONE
-	if mesh_instance:
-		mesh_instance.modulate = Color.WHITE
+	if has_node("MeshInstance3D"):
+		var mesh = $MeshInstance3D
+		if mesh.material_override:
+			var material = mesh.material_override as ShaderMaterial
+			if material:
+				material.set_shader_parameter("base_color", Color.GREEN)
 	
-	# Reset position
-	global_position = spawn_position + Vector3(0, 2, 0)
+	global_position = Vector3(0, 5, 0)
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	
-	# Re-enable physics
-	set_physics_process(true)
-	
 	health_changed.emit(health, max_health)
 	ammo_changed.emit(ammo, max_ammo)
+	player_respawned.emit()
 	
-	print("Player respawned at: ", global_position)
+	print("Player respawned!")
 
 func heal(amount):
 	if is_dead:
@@ -221,12 +226,9 @@ func heal(amount):
 	health += amount
 	health = min(max_health, health)
 	health_changed.emit(health, max_health)
-	print("Player healed for ", amount, ". Health: ", health)
+	print("Player healed ", amount, ". Health: ", health)
 
 func add_ammo(amount):
-	if is_dead:
-		return
-		
 	ammo += amount
 	ammo = min(max_ammo, ammo)
 	ammo_changed.emit(ammo, max_ammo)
@@ -240,11 +242,12 @@ func _try_interact():
 		var target = interaction_ray.get_collider()
 		if target.has_method("interact"):
 			target.interact()
+			print("Interaction completed!")
 
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
 
-# Mortar system
+# EXACT COPY OF YOUR ORIGINAL MORTAR FUNCTIONS
 func _fire_mortar_at_cursor():
 	if is_dead or not mortar_shell_scene:
 		return
@@ -252,40 +255,78 @@ func _fire_mortar_at_cursor():
 	var camera = get_viewport().get_camera_3d()
 	if not camera:
 		return
-	
+		
 	var mouse_pos = get_viewport().get_mouse_position()
-	var ray_origin = camera.project_ray_origin(mouse_pos)
-	var ray_direction = camera.project_ray_normal(mouse_pos)
-	var ray_end = ray_origin + ray_direction * 1000.0
+	var from = camera.project_ray_origin(mouse_pos)
+	var to = from + camera.project_ray_normal(mouse_pos) * 2000
 	
 	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [self]
-	query.collision_mask = 1
-	
 	var result = space_state.intersect_ray(query)
-	if not result:
-		print("No target found!")
+	
+	if result:
+		_fire_mortar_at_position(result.position)
+	else:
+		print("No target found under cursor!")
+
+func _fire_mortar_at_position(target_pos: Vector3):
+	if is_dead or not mortar_shell_scene:
 		return
 	
-	var target_position = result.position
-	var distance = global_position.distance_to(target_position)
+	var distance = global_position.distance_to(target_pos)
 	
 	if distance < mortar_min_range:
-		print("Target too close! Distance: ", distance)
+		print("Target too close! Min range: ", mortar_min_range)
 		return
-	if distance > mortar_max_range:
-		print("Target too far! Distance: ", distance)
+	elif distance > mortar_max_range:
+		print("Target too far! Max range: ", mortar_max_range)
 		return
 	
 	var shell = mortar_shell_scene.instantiate()
 	get_tree().current_scene.add_child(shell)
-	shell.global_position = global_position + Vector3(0, 1, 0)
+	shell.global_position = launch_point.global_position
 	
-	shell.launch_at_target(target_position)
+	var launch_velocity = _calculate_mortar_trajectory(target_pos)
 	
-	var recoil_direction = (global_position - target_position).normalized()
-	recoil_direction.y = 0
-	apply_central_impulse(recoil_direction * 100.0)
+	if launch_velocity.length() > 0:
+		var look_direction = Vector3(target_pos.x - global_position.x, 0, target_pos.z - global_position.z).normalized()
+		if look_direction.length() > 0:
+			look_at(global_position + look_direction, Vector3.UP)
+		
+		if shell.has_method("launch"):
+			shell.launch(launch_velocity.normalized(), launch_velocity.length())
+		else:
+			shell.queue_free()
+			return
+		
+		var recoil = -look_direction * 2.0
+		apply_impulse(recoil)
+		
+		print("Mortar fired! Target: ", target_pos, " Distance: ", distance)
+	else:
+		shell.queue_free()
+
+func _calculate_mortar_trajectory(target_pos: Vector3) -> Vector3:
+	var start_pos = launch_point.global_position
+	var displacement = target_pos - start_pos
+	var horizontal_distance = Vector2(displacement.x, displacement.z).length()
+	var vertical_distance = displacement.y
 	
-	print("Mortar fired at: ", target_position, " Distance: ", distance)
+	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	var angle_rad = deg_to_rad(mortar_launch_angle)
+	
+	var velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
+	
+	if velocity_squared <= 0:
+		angle_rad = deg_to_rad(70.0)
+		velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
+		
+		if velocity_squared <= 0:
+			return Vector3.ZERO
+	
+	var velocity = sqrt(velocity_squared)
+	var horizontal_dir = Vector3(displacement.x, 0, displacement.z).normalized()
+	var launch_direction = (horizontal_dir * cos(angle_rad) + Vector3.UP * sin(angle_rad)).normalized()
+	
+	return launch_direction * velocity

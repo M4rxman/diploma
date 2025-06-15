@@ -165,9 +165,9 @@ func add_ground():
 		return
 		
 	var ground = GroundScene.instantiate()
-	if ground.has_property("width"):
+	if ground.get("width"):
 		ground.width = map_width * 2
-	if ground.has_property("depth"):
+	if ground.get("depth"):
 		ground.depth = map_depth * 2 
 	navmesh_instance.add_child(ground)
 	ground.owner = self

@@ -11,7 +11,7 @@ func save_game(player, enemies, level_seed: int = 0, level_settings: Dictionary 
 				"y": player.global_transform.origin.y,
 				"z": player.global_transform.origin.z
 			},
-			"health": player.health if player.has_property("health") else 100
+			"health": player.health if player.get("health") else 100
 		},
 		"enemies": [],
 		"level": {
@@ -34,8 +34,8 @@ func save_game(player, enemies, level_seed: int = 0, level_settings: Dictionary 
 					"y": enemy.global_transform.origin.y,
 					"z": enemy.global_transform.origin.z
 				},
-				"health": enemy.health if enemy.has_property("health") else 100,
-				"ai_active": enemy.ai_is_active if enemy.has_property("ai_is_active") else true
+				"health": enemy.health if enemy.get("health") else 100,
+				"ai_active": enemy.ai_is_active if enemy.get("ai_is_active") else true
 			})
 	
 	# Write to file
@@ -77,7 +77,7 @@ func load_game(player, enemies) -> Dictionary:
 				player.global_transform.origin = Vector3(pos.x, pos.y, pos.z)
 				print("Player position loaded: ", Vector3(pos.x, pos.y, pos.z))
 		
-		if "health" in player_data and player.has_property("health"):
+		if "health" in player_data and player.get("health"):
 			player.health = player_data["health"]
 
 	# Handle enemies - clear excess enemies
@@ -100,7 +100,7 @@ func load_game(player, enemies) -> Dictionary:
 					enemy.global_transform.origin = Vector3(pos.x, pos.y, pos.z)
 			
 			# Load health
-			if "health" in enemy_data and enemy.has_property("health"):
+			if "health" in enemy_data and enemy.get("health"):
 				enemy.health = enemy_data["health"]
 			
 			# Load AI state

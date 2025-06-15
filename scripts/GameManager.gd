@@ -1,4 +1,4 @@
-# scripts/GameManager.gd
+# scripts/GameManager.gd - Complete enhanced game manager
 extends Node3D
 
 class_name GameManager
@@ -7,15 +7,22 @@ class_name GameManager
 @onready var save_manager = $SaveManager
 @onready var level_manager = $DynamicLevelManager
 
+# UI system
+var game_ui: Control
+
 var ray_origin = Vector3()
 var ray_target = Vector3()
 var current_wave = 0
 var enemies_remaining = 0
 
-# UI Elements (add these as needed)
+# Game state
+var game_started = false
+var level_completed = false
+
+# UI Elements signals
 signal wave_changed(wave_number: int)
 signal enemies_count_changed(count: int)
-signal level_completed
+signal level_completed_signal
 
 func _ready():
 	# Add to game manager group for easy finding
@@ -24,20 +31,44 @@ func _ready():
 	# Set up global reference
 	GameManagerGlobal.set_scene_game_manager(self)
 	
+	# Create and add UI
+	setup_game_ui()
+	
 	# Connect level manager signals
 	if level_manager:
 		level_manager.level_generated.connect(_on_level_generated)
 		level_manager.enemies_spawned.connect(_on_enemies_spawned)
 	
-	# Don't load save game immediately - wait for level to generate
+	# Connect player signals for UI updates
+	if player:
+		if player.has_signal("player_died"):
+			player.player_died.connect(_on_player_died)
+		if player.has_signal("player_respawned"):
+			player.player_respawned.connect(_on_player_respawned)
+	
 	print("GameManager initialized, waiting for level generation...")
+
+func setup_game_ui():
+	"""Create and setup the game UI"""
+	# Create the UI script instance
+	var ui_script = preload("res://ui/GameUI.gd")
+	game_ui = ui_script.new()
+	game_ui.name = "GameUI"
+	
+	# Add UI to the scene tree as a CanvasLayer for proper rendering
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.name = "UILayer"
+	add_child(canvas_layer)
+	canvas_layer.add_child(game_ui)
+	
+	print("Game UI initialized")
 
 func _input(event):
 	if event.is_action_pressed("save_game"):
 		save_current_game()
 	elif event.is_action_pressed("load_game"):
 		load_saved_game()
-	elif event.is_action_pressed("regenerate_level"):  # Add this action to input map
+	elif event.is_action_pressed("regenerate_level"):  # Add this action to input map (R key)
 		regenerate_current_level()
 
 func _physics_process(delta: float) -> void:
@@ -46,7 +77,7 @@ func _physics_process(delta: float) -> void:
 
 func handle_mouse_cursor():
 	"""Handle player rotation based on mouse cursor"""
-	if not player:
+	if not player or (player.get("is_dead") and player.is_dead):
 		return
 		
 	var mouse_position = get_viewport().get_mouse_position()
@@ -67,8 +98,6 @@ func handle_mouse_cursor():
 func _on_level_generated():
 	"""Called when the level generation is complete"""
 	print("Level generated successfully!")
-	
-	# Now we can try to load save game if it exists
 	call_deferred("try_load_saved_game")
 
 func _on_enemies_spawned():
@@ -78,32 +107,41 @@ func _on_enemies_spawned():
 func try_load_saved_game():
 	"""Try to load saved game, fallback to new game"""
 	var enemies = get_current_enemies()
-	if not save_manager.load_game(player, enemies):
-		print("No save file found or load failed, starting new game.")
-		start_new_game()
+	if save_manager and save_manager.has_method("load_game"):
+		var level_data = save_manager.load_game(player, enemies)
+		if not level_data.is_empty():
+			print("Game loaded from save file")
+			return
+	
+	print("No save file found or load failed, starting new game.")
+	start_new_game()
 
 func start_new_game():
 	"""Initialize a new game session"""
 	print("Starting new game session...")
 	current_wave = 0
+	game_started = true
+	level_completed = false
 	
 	# Position player at center of generated level
 	if level_manager and level_manager.get_current_level():
-		var level = level_manager.get_current_level()
-		var center_world_pos = Vector3(0, 2, 0)  # Center of map, slightly elevated
+		var center_world_pos = Vector3(0, 3, 0)  # Center of map, elevated for safety
 		player.global_position = center_world_pos
 		print("Player positioned at level center: ", center_world_pos)
 	
 	# Adjust camera position for better view
 	if has_node("Camera3D"):
 		var camera = $Camera3D
-		# Position camera for better top-down view
-		camera.global_position = Vector3(0, 25, 15)  # Higher and back
+		camera.global_position = Vector3(0, 25, 15)
 		camera.look_at(Vector3(0, 0, 0), Vector3.UP)
-		camera.fov = 45.0  # Wider field of view
+		camera.fov = 45.0
 
 func save_current_game():
 	"""Save the current game state"""
+	if not save_manager:
+		print("No save manager available!")
+		return
+		
 	var enemies = get_current_enemies()
 	var level_seed = 0
 	var level_settings = {}
@@ -118,21 +156,30 @@ func save_current_game():
 			"foreground_color": level_manager.foreground_color,
 			"background_color": level_manager.background_color
 		}
-		# You'll need to store the seed in DynamicLevelManager
 		level_seed = level_manager.current_seed if level_manager.has_property("current_seed") else 0
 	
 	save_manager.save_game(player, enemies, level_seed, level_settings)
+	print("Game saved!")
 
 func load_saved_game():
 	"""Load saved game state"""
+	if not save_manager:
+		print("No save manager available!")
+		return
+		
 	var enemies = get_current_enemies()
-	if not save_manager.load_game(player, enemies):
+	var level_data = save_manager.load_game(player, enemies)
+	if not level_data.is_empty():
+		print("Game loaded successfully!")
+	else:
 		print("Load failed, continuing current session.")
 
 func regenerate_current_level():
 	"""Regenerate the current level with new settings"""
 	if level_manager:
 		print("Regenerating level...")
+		level_completed = false
+		current_wave = 0
 		level_manager.regenerate_level()
 
 func get_current_enemies() -> Array:
@@ -153,15 +200,30 @@ func _on_wave_update(wave_number: int):
 	current_wave = wave_number
 	print("Wave ", wave_number + 1, " started!")
 	wave_changed.emit(wave_number)
+	
+	# Update UI
+	if game_ui and game_ui.has_method("_on_wave_changed"):
+		game_ui._on_wave_changed(wave_number)
 
 func _on_level_complete():
 	"""Called when all waves are completed"""
 	print("Level completed! Player wins!")
-	level_completed.emit()
+	level_completed = true
+	level_completed_signal.emit()
 	
-	# Don't auto-regenerate - let player decide
-	print("Press R to generate a new level or continue playing")
-	# Optional: You can add a UI popup here asking player what to do
+	# Show completion message
+	if game_ui and game_ui.has_method("show_level_complete_message"):
+		game_ui.show_level_complete_message()
+	
+	print("Press R to generate a new level")
+
+func _on_wave_complete(wave_number: int):
+	"""Called when a single wave is completed"""
+	print("Wave ", wave_number, " completed!")
+	
+	# Show wave completion message
+	if game_ui and game_ui.has_method("show_wave_complete_message"):
+		game_ui.show_wave_complete_message(wave_number)
 
 func _on_item_drop(item_scene: PackedScene):
 	"""Called when an item should be dropped"""
@@ -171,13 +233,35 @@ func _on_item_drop(item_scene: PackedScene):
 		
 		# Position near player
 		var drop_position = player.global_position + Vector3(
-			randf_range(-2, 2), 1, randf_range(-2, 2)
+			randf_range(-3, 3), 2, randf_range(-3, 3)
 		)
 		item.global_position = drop_position
-		print("Item dropped: ", item.name)
+		print("Item dropped: ", item.name if item.has_method("get_name") else "Unknown Item")
+
+func _on_player_died():
+	"""Handle player death"""
+	print("Player has died!")
+	
+	# Show death UI
+	if game_ui and game_ui.has_method("show_death_message"):
+		game_ui.show_death_message()
+	
+	# Pause enemy spawning
+	var spawner = get_level_spawner()
+	if spawner and spawner.has_method("pause_spawning"):
+		spawner.pause_spawning()
+
+func _on_player_respawned():
+	"""Handle player respawn"""
+	print("Player has respawned!")
+	
+	# Resume enemy spawning
+	var spawner = get_level_spawner()
+	if spawner and spawner.has_method("resume_spawning"):
+		spawner.resume_spawning()
 
 # Helper functions for AI control (for testing)
-func turn_off_enemy_ai() -> bool:
+func _turn_off_enemy_ai() -> bool:
 	"""Turn off AI for all enemies"""
 	var enemies = get_current_enemies()
 	var success = true
@@ -188,7 +272,7 @@ func turn_off_enemy_ai() -> bool:
 			success = false
 	return success
 
-func turn_on_enemy_ai() -> bool:
+func _turn_on_enemy_ai() -> bool:
 	"""Turn on AI for all enemies"""
 	var enemies = get_current_enemies()
 	var success = true
@@ -199,12 +283,65 @@ func turn_on_enemy_ai() -> bool:
 			success = false
 	return success
 
+func turn_off_enemy_ai() -> bool:
+	return _turn_off_enemy_ai()
+
+func turn_on_enemy_ai() -> bool:
+	return _turn_on_enemy_ai()
+
 func get_ai_status() -> bool:
 	"""Get AI status from first enemy"""
 	var enemies = get_current_enemies()
 	if enemies.size() > 0 and enemies[0].has_method("_get_ai_status"):
 		return enemies[0]._get_ai_status()
 	return false
+
+# Boundary checking for player
+func _process(_delta):
+	"""Check if player is within map bounds"""
+	if not player or not level_manager:
+		return
+	
+	var bounds = level_manager.get_map_bounds()
+	if bounds.is_empty():
+		return
+	
+	var player_pos = player.global_position
+	
+	# Check if player is outside bounds
+	if (player_pos.x < bounds.get("min_x", -50) or player_pos.x > bounds.get("max_x", 50) or 
+		player_pos.z < bounds.get("min_z", -50) or player_pos.z > bounds.get("max_z", 50) or
+		player_pos.y < -10):  # Fell below map
+		
+		# Teleport player back to center
+		var safe_position = Vector3(0, 5, 0)
+		player.global_position = safe_position
+		player.linear_velocity = Vector3.ZERO
+		print("Player moved back to safe zone!")
+
+# Statistics and debugging
+func get_game_stats() -> Dictionary:
+	"""Get current game statistics"""
+	var enemies = get_current_enemies()
+	var spawner = get_level_spawner()
+	
+	return {
+		"current_wave": current_wave + 1,
+		"active_enemies": enemies.size(),
+		"player_health": player.health if player.has_property("health") else 0,
+		"player_ammo": player.ammo if player.has_property("ammo") else 0,
+		"enemies_remaining_to_spawn": spawner.get_enemies_remaining() if spawner else 0,
+		"level_completed": level_completed,
+		"game_started": game_started
+	}
+
+func print_game_stats():
+	"""Print current game statistics for debugging"""
+	var stats = get_game_stats()
+	print("=== GAME STATS ===")
+	for key in stats:
+		print(key, ": ", stats[key])
+	print("================")
 
 # Getters for external access
 func get_player() -> Node:
@@ -222,3 +359,31 @@ func get_level_spawner() -> LevelSpawner:
 	if level_manager:
 		return level_manager.get_level_spawner()
 	return null
+
+func get_game_ui() -> Control:
+	return game_ui
+
+# Emergency functions for debugging
+func emergency_heal_player():
+	"""Emergency function to heal player (for debugging)"""
+	if player and player.has_method("heal"):
+		player.heal(50)
+		print("Emergency heal applied!")
+
+func emergency_add_ammo():
+	"""Emergency function to add ammo (for debugging)"""
+	if player and player.has_method("add_ammo"):
+		player.add_ammo(20)
+		print("Emergency ammo added!")
+
+func clear_all_enemies():
+	"""Clear all enemies from the scene (for debugging)"""
+	var enemies = get_current_enemies()
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	print("All enemies cleared!")
+
+# Legacy function names for compatibility
+func _on_item_drop_legacy(item_scene: PackedScene):
+	_on_item_drop(item_scene)

@@ -26,7 +26,6 @@ axis_lock_angular_x = true
 axis_lock_angular_z = true
 physics_material_override = SubResource("PhysicsMaterial_jsiwy")
 script = ExtResource("1_4gp2m")
-MAX_HEALTH = 40
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("SphereMesh_iwqgq")
