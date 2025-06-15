@@ -49,9 +49,9 @@ directional_shadow_fade_start = 1.0
 directional_shadow_max_distance = 300.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.406737, 0.913545, 0, -0.913545, 0.406737, 0, 25, 11)
+transform = Transform3D(1, 0, 0, 0, 0.406737, 0.913545, 0, -0.913545, 0.406737, 0, 30, 20)
 current = true
-fov = 45.0
+fov = 95.0
 size = 56.0
 
 [node name="SaveManager" type="Node" parent="."]

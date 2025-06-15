@@ -1,4 +1,4 @@
-# scripts/DynamicLevelManager.gd - Enhanced wave system with item drops
+# scripts/DynamicLevelManager.gd - Enhanced with better wall system
 extends Node3D
 
 class_name DynamicLevelManager
@@ -59,71 +59,84 @@ func generate_new_level():
 	create_level_structure(current_seed)
 	add_ground()
 	add_obstacles(current_seed)
-	add_map_walls()  # Add boundary walls
+	add_improved_map_walls()  # IMPROVED: Better wall system
 	bake_navigation()
 	add_enhanced_waves()  # Use enhanced wave system
 	
-	# Calculate map bounds for boundary checking
+	# Calculate map bounds for reference (no longer used for teleportation)
 	calculate_map_bounds()
 	
 	if spawn_enemies and enemy_scene:
 		setup_enemy_spawning()
 	
 	level_generated.emit()
-	print("Level generation complete with map boundaries!")
+	print("Level generation complete with improved boundary walls!")
 
 func calculate_map_bounds():
-	"""Calculate world-space boundaries of the map"""
+	"""Calculate world-space boundaries of the map for reference"""
 	var half_width = map_width
 	var half_depth = map_depth
 	
 	map_bounds = {
-		"min_x": -half_width + 2,  # Leave some margin inside walls
+		"min_x": -half_width + 2,
 		"max_x": half_width - 2,
 		"min_z": -half_depth + 2,
 		"max_z": half_depth - 2,
 		"center": Vector3.ZERO,
-		"wall_height": 10.0  # Height of boundary walls
+		"wall_height": 20.0  # Increased wall height
 	}
 	
 	print("Map bounds set: ", map_bounds)
 
-func add_map_walls():
-	"""Add walls around the map perimeter to prevent falling off"""
+func add_improved_map_walls():
+	"""Add improved walls around the map perimeter to prevent falling off"""
 	if not current_level:
 		return
 	
 	var nav_region = current_level.get_node("NavigationRegion3D")
-	var wall_height = 10.0
-	var wall_thickness = 2.0
+	var wall_height = 20.0  # INCREASED: Much taller walls
+	var wall_thickness = 3.0  # INCREASED: Thicker walls
 	var wall_material = create_wall_material()
 	
-	# Calculate wall positions based on map size
-	var half_width = map_width + wall_thickness
-	var half_depth = map_depth + wall_thickness
+	# Calculate wall positions based on map size with better coverage
+	var half_width = map_width + wall_thickness/2
+	var half_depth = map_depth + wall_thickness/2
 	
-	# North wall (positive Z)
+	print("Creating walls with dimensions - Width: ", half_width*2, " Depth: ", half_depth*2, " Height: ", wall_height)
+	
+	# North wall (positive Z) - Make it extend beyond the ground
 	create_wall(nav_region, Vector3(0, wall_height/2, half_depth), 
-				Vector3(half_width * 2, wall_height, wall_thickness), wall_material)
+				Vector3(half_width * 2 + wall_thickness, wall_height, wall_thickness), wall_material, "NorthWall")
 	
 	# South wall (negative Z)
 	create_wall(nav_region, Vector3(0, wall_height/2, -half_depth), 
-				Vector3(half_width * 2, wall_height, wall_thickness), wall_material)
+				Vector3(half_width * 2 + wall_thickness, wall_height, wall_thickness), wall_material, "SouthWall")
 	
 	# East wall (positive X)
 	create_wall(nav_region, Vector3(half_width, wall_height/2, 0), 
-				Vector3(wall_thickness, wall_height, half_depth * 2), wall_material)
+				Vector3(wall_thickness, wall_height, half_depth * 2), wall_material, "EastWall")
 	
 	# West wall (negative X)
 	create_wall(nav_region, Vector3(-half_width, wall_height/2, 0), 
-				Vector3(wall_thickness, wall_height, half_depth * 2), wall_material)
+				Vector3(wall_thickness, wall_height, half_depth * 2), wall_material, "WestWall")
 	
-	print("Added boundary walls around map")
+	# ADDITIONAL: Create corner reinforcements
+	var corner_size = Vector3(wall_thickness, wall_height, wall_thickness)
+	create_wall(nav_region, Vector3(half_width, wall_height/2, half_depth), corner_size, wall_material, "CornerNE")
+	create_wall(nav_region, Vector3(-half_width, wall_height/2, half_depth), corner_size, wall_material, "CornerNW")
+	create_wall(nav_region, Vector3(half_width, wall_height/2, -half_depth), corner_size, wall_material, "CornerSE")
+	create_wall(nav_region, Vector3(-half_width, wall_height/2, -half_depth), corner_size, wall_material, "CornerSW")
+	
+	print("Added improved boundary walls around map with height: ", wall_height)
 
-func create_wall(parent: Node, position: Vector3, size: Vector3, material: Material):
-	"""Create a single wall segment"""
+func create_wall(parent: Node, position: Vector3, size: Vector3, material: Material, wall_name: String = "BoundaryWall"):
+	"""Create a single wall segment with improved collision"""
 	var wall = StaticBody3D.new()
-	wall.name = "BoundaryWall"
+	wall.name = wall_name
+	
+	# IMPROVED: Better collision layers for walls
+	wall.collision_layer = 1  # Make sure walls are on the right collision layer
+	wall.collision_mask = 0   # Walls don't need to detect anything
 	
 	# Create collision shape
 	var collision = CollisionShape3D.new()
@@ -143,14 +156,21 @@ func create_wall(parent: Node, position: Vector3, size: Vector3, material: Mater
 	# Position the wall
 	wall.global_position = position
 	parent.add_child(wall)
+	
+	print("Created wall: ", wall_name, " at position: ", position, " with size: ", size)
 
 func create_wall_material() -> StandardMaterial3D:
-	"""Create material for boundary walls"""
+	"""Create an improved material for boundary walls"""
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.2, 0.2, 0.2, 0.8)  # Dark gray, slightly transparent
-	material.metallic = 0.1
-	material.roughness = 0.8
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(0.15, 0.15, 0.15, 1.0)  # Darker, fully opaque
+	material.metallic = 0.2
+	material.roughness = 0.9
+	material.emission = Color(0.1, 0.05, 0.05)  # Slight red glow for visibility
+	material.emission_energy = 0.1
+	
+	# Add a simple pattern for better visibility
+	material.uv1_scale = Vector3(2, 4, 1)  # Stretch texture for brick-like appearance
+	
 	return material
 
 func clear_current_level():

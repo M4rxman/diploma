@@ -1,4 +1,4 @@
-# scripts/GameManager.gd - Complete enhanced game manager
+# scripts/GameManager.gd - Fixed game manager without teleportation
 extends Node3D
 
 class_name GameManager
@@ -98,7 +98,25 @@ func handle_mouse_cursor():
 func _on_level_generated():
 	"""Called when the level generation is complete"""
 	print("Level generated successfully!")
+	
+	# Clear any existing UI messages when level is regenerated
+	if game_ui:
+		clear_ui_messages()
+	
 	call_deferred("try_load_saved_game")
+
+func clear_ui_messages():
+	"""Clear death and victory messages from UI"""
+	if game_ui and game_ui.has_method("clear_all_messages"):
+		game_ui.clear_all_messages()
+	
+	# Remove death overlay if it exists
+	if has_node("UILayer/GameUI/DeathOverlay"):
+		get_node("UILayer/GameUI/DeathOverlay").queue_free()
+	
+	# Remove any victory messages
+	for child in get_tree().get_nodes_in_group("victory_message"):
+		child.queue_free()
 
 func _on_enemies_spawned():
 	"""Called when enemy spawning system is initialized"""
@@ -132,9 +150,8 @@ func start_new_game():
 	# Adjust camera position for better view
 	if has_node("Camera3D"):
 		var camera = $Camera3D
-		camera.global_position = Vector3(0, 25, 15)
-		camera.look_at(Vector3(0, 0, 0), Vector3.UP)
-		camera.fov = 45.0
+		camera.global_position = Vector3(0, 20, 15)
+		camera.fov = 60.0
 
 func save_current_game():
 	"""Save the current game state"""
@@ -296,28 +313,8 @@ func get_ai_status() -> bool:
 		return enemies[0]._get_ai_status()
 	return false
 
-# Boundary checking for player
-func _process(_delta):
-	"""Check if player is within map bounds"""
-	if not player or not level_manager:
-		return
-	
-	var bounds = level_manager.get_map_bounds()
-	if bounds.is_empty():
-		return
-	
-	var player_pos = player.global_position
-	
-	# Check if player is outside bounds
-	if (player_pos.x < bounds.get("min_x", -50) or player_pos.x > bounds.get("max_x", 50) or 
-		player_pos.z < bounds.get("min_z", -50) or player_pos.z > bounds.get("max_z", 50) or
-		player_pos.y < -10):  # Fell below map
-		
-		# Teleport player back to center
-		var safe_position = Vector3(0, 5, 0)
-		player.global_position = safe_position
-		player.linear_velocity = Vector3.ZERO
-		print("Player moved back to safe zone!")
+# REMOVED: Boundary checking teleportation code
+# Now we rely on physical walls instead
 
 # Statistics and debugging
 func get_game_stats() -> Dictionary:

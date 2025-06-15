@@ -1,4 +1,4 @@
-# ui/GameUI.gd - Complete game UI system
+# ui/GameUI.gd - Fixed UI system with proper message clearing
 extends Control
 
 # UI Elements
@@ -201,6 +201,43 @@ func create_crosshair_texture():
 	texture.set_image(image)
 	crosshair.texture = texture
 
+# NEW: Function to clear all messages when level is regenerated
+func clear_all_messages():
+	"""Clear all temporary UI messages (death, victory, etc.)"""
+	print("Clearing all UI messages")
+	
+	# Remove death overlay if it exists
+	var death_overlay = get_node_or_null("DeathOverlay")
+	if death_overlay:
+		death_overlay.queue_free()
+		print("Removed death overlay")
+	
+	# Remove any victory/level complete messages
+	for child in get_children():
+		if child.name.begins_with("VictoryMessage") or child.name.begins_with("LevelCompleteMessage"):
+			child.queue_free()
+			print("Removed victory message: ", child.name)
+	
+	# Remove any temporary message labels
+	for child in get_children():
+		if child is Label and (
+			"LEVEL COMPLETE" in child.text or 
+			"YOU DIED" in child.text or 
+			"VICTORY" in child.text or
+			"Wave" in child.text and "COMPLETE" in child.text
+		):
+			child.queue_free()
+			print("Removed temporary message: ", child.text)
+	
+	# Reset wave display to wave 1
+	if wave_label:
+		wave_label.text = "Wave: 1"
+		wave_label.add_theme_color_override("font_color", Color.CYAN)
+	
+	# Reset enemy count
+	if enemy_count_label:
+		enemy_count_label.text = "Enemies: 0"
+
 func _on_health_changed(new_health: int, max_health: int):
 	"""Update health display"""
 	if health_bar:
@@ -249,6 +286,7 @@ func _on_enemies_count_changed(count: int):
 func show_wave_complete_message(wave_number: int):
 	"""Show wave completion message with supplies info"""
 	var message = Label.new()
+	message.name = "WaveCompleteMessage_" + str(wave_number)  # Give it a specific name
 	message.text = "WAVE " + str(wave_number) + " COMPLETE!\nSupplies incoming!"
 	message.add_theme_font_size_override("font_size", 32)
 	message.add_theme_color_override("font_color", Color.GREEN)
@@ -264,12 +302,16 @@ func show_wave_complete_message(wave_number: int):
 func show_level_complete_message():
 	"""Show level completion message"""
 	var message = Label.new()
+	message.name = "LevelCompleteMessage"  # Give it a specific name
 	message.text = "LEVEL COMPLETE!\nPress R for new level"
 	message.add_theme_font_size_override("font_size", 42)
 	message.add_theme_color_override("font_color", Color.GOLD)
 	message.position = Vector2(get_viewport().get_visible_rect().size.x / 2 - 200, get_viewport().get_visible_rect().size.y / 2 - 50)
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(message)
+	
+	# Add to a group for easy cleanup
+	message.add_to_group("victory_message")
 	
 	# Pulsing effect
 	var tween = create_tween()

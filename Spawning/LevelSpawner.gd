@@ -19,6 +19,7 @@ var waves: Array = []
 var current_wave: Wave
 var current_wave_number: int = -1
 var active_enemies: Array = []
+var game_started: bool = false  # NEW: Track if game has actually started
 
 signal level_complete
 signal wave_update(wave_number: int)
@@ -61,6 +62,7 @@ func start_next_wave():
 	
 	enemies_killed_this_wave = 0
 	current_wave_number += 1
+	game_started = true  # NOW the game has actually started
 	
 	if current_wave_number < waves.size():
 		wave_update.emit(current_wave_number)
@@ -81,6 +83,7 @@ func start_next_wave():
 
 func reset():
 	current_wave_number = -1
+	game_started = false  # Reset game started state
 	
 	# Clear existing enemies
 	for enemy in active_enemies:
@@ -167,7 +170,10 @@ func _on_enemy_died(enemy):
 			drop_item.emit(current_wave.DropItem)
 			print("LevelSpawner: Item dropped!")
 	
-	# IMPORTANT: Check if wave is complete
+	# IMPORTANT: Check if wave is complete - BUT ONLY IF GAME HAS STARTED
+	if not game_started:
+		return
+		
 	var all_spawned = (enemies_remaining_to_spawn <= 0)
 	var all_dead = (active_enemies.size() == 0)
 	

@@ -1,4 +1,4 @@
-# player/character.gd - FIXED with correct inputs and no auto-mortar spawn
+# player/character.gd - Fixed mortar targeting and RigidBody movement
 extends RigidBody3D
 
 @onready var feet = $Feet  
@@ -247,34 +247,53 @@ func _try_interact():
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
 
-# EXACT COPY OF YOUR ORIGINAL MORTAR FUNCTIONS
+# FIXED MORTAR FUNCTIONS - Completely rewritten for better targeting
 func _fire_mortar_at_cursor():
 	if is_dead or not mortar_shell_scene:
+		print("Cannot fire mortar: dead or no scene")
 		return
 	
+	# Get the main camera from the scene
 	var camera = get_viewport().get_camera_3d()
 	if not camera:
+		print("No camera found!")
 		return
-		
-	var mouse_pos = get_viewport().get_mouse_position()
-	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * 2000
 	
+	print("Firing mortar with camera: ", camera.name)
+	
+	var mouse_pos = get_viewport().get_mouse_position()
+	print("Mouse position: ", mouse_pos)
+	
+	# Create ray from camera through mouse position
+	var from = camera.project_ray_origin(mouse_pos)
+	var to = from + camera.project_ray_normal(mouse_pos) * 1000  # Reduced distance for better accuracy
+	
+	print("Ray from: ", from, " to: ", to)
+	
+	# Perform raycast to find target position
 	var space_state = get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [self]
+	query.collision_mask = 1  # Only hit terrain/static objects
+	
 	var result = space_state.intersect_ray(query)
 	
 	if result:
+		print("Hit target at: ", result.position)
 		_fire_mortar_at_position(result.position)
 	else:
-		print("No target found under cursor!")
+		# If no collision, fire at max range in that direction
+		var fallback_target = from + camera.project_ray_normal(mouse_pos) * mortar_max_range
+		fallback_target.y = 0  # Place on ground level
+		print("No collision, using fallback target: ", fallback_target)
+		_fire_mortar_at_position(fallback_target)
 
 func _fire_mortar_at_position(target_pos: Vector3):
 	if is_dead or not mortar_shell_scene:
 		return
 	
 	var distance = global_position.distance_to(target_pos)
+	print("Target distance: ", distance)
 	
 	if distance < mortar_min_range:
 		print("Target too close! Min range: ", mortar_min_range)
@@ -283,50 +302,79 @@ func _fire_mortar_at_position(target_pos: Vector3):
 		print("Target too far! Max range: ", mortar_max_range)
 		return
 	
+	# Create mortar shell
 	var shell = mortar_shell_scene.instantiate()
 	get_tree().current_scene.add_child(shell)
-	shell.global_position = launch_point.global_position
 	
-	var launch_velocity = _calculate_mortar_trajectory(target_pos)
+	# Position shell at launch point
+	var launch_pos = global_position + Vector3(0, 1.5, 0)  # Launch from above player
+	shell.global_position = launch_pos
+	
+	print("Shell created at: ", shell.global_position)
+	
+	# Calculate and apply launch velocity
+	var launch_velocity = _calculate_mortar_trajectory(target_pos, launch_pos)
 	
 	if launch_velocity.length() > 0:
+		# Face the target direction
 		var look_direction = Vector3(target_pos.x - global_position.x, 0, target_pos.z - global_position.z).normalized()
 		if look_direction.length() > 0:
 			look_at(global_position + look_direction, Vector3.UP)
 		
-		if shell.has_method("launch"):
+		# Launch the shell using the new method
+		if shell.has_method("launch_at_target"):
+			shell.launch_at_target(target_pos)
+			print("Launched shell using launch_at_target method")
+		elif shell.has_method("launch"):
 			shell.launch(launch_velocity.normalized(), launch_velocity.length())
+			print("Launched shell using launch method")
 		else:
-			shell.queue_free()
-			return
+			# Fallback: apply velocity directly
+			if shell is RigidBody3D:
+				shell.linear_velocity = launch_velocity
+				print("Applied velocity directly: ", launch_velocity)
+			else:
+				print("Shell is not RigidBody3D, cannot apply velocity")
+				shell.queue_free()
+				return
 		
-		var recoil = -look_direction * 2.0
+		# Apply recoil to player
+		var recoil = -look_direction * 5.0
 		apply_impulse(recoil)
 		
 		print("Mortar fired! Target: ", target_pos, " Distance: ", distance)
 	else:
+		print("Could not calculate trajectory")
 		shell.queue_free()
 
-func _calculate_mortar_trajectory(target_pos: Vector3) -> Vector3:
-	var start_pos = launch_point.global_position
-	var displacement = target_pos - start_pos
+func _calculate_mortar_trajectory(target_pos: Vector3, launch_pos: Vector3 = global_position) -> Vector3:
+	"""Calculate ballistic trajectory for mortar shell"""
+	var displacement = target_pos - launch_pos
 	var horizontal_distance = Vector2(displacement.x, displacement.z).length()
 	var vertical_distance = displacement.y
 	
 	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	var angle_rad = deg_to_rad(mortar_launch_angle)
 	
+	print("Calculating trajectory - H dist: ", horizontal_distance, " V dist: ", vertical_distance, " Angle: ", mortar_launch_angle)
+	
+	# Ballistic formula for required velocity
 	var velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
 	
 	if velocity_squared <= 0:
-		angle_rad = deg_to_rad(70.0)
+		# Try with a steeper angle
+		angle_rad = deg_to_rad(60.0)
 		velocity_squared = (gravity * horizontal_distance * horizontal_distance) / (2.0 * cos(angle_rad) * cos(angle_rad) * (horizontal_distance * tan(angle_rad) - vertical_distance))
 		
 		if velocity_squared <= 0:
+			print("Cannot calculate valid trajectory")
 			return Vector3.ZERO
 	
 	var velocity = sqrt(velocity_squared)
 	var horizontal_dir = Vector3(displacement.x, 0, displacement.z).normalized()
-	var launch_direction = (horizontal_dir * cos(angle_rad) + Vector3.UP * sin(angle_rad)).normalized()
+	var launch_direction = horizontal_dir * cos(angle_rad) + Vector3.UP * sin(angle_rad)
 	
-	return launch_direction * velocity
+	var final_velocity = launch_direction * velocity
+	print("Calculated velocity: ", final_velocity, " (magnitude: ", velocity, ")")
+	
+	return final_velocity
