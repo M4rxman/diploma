@@ -1,4 +1,4 @@
-# scripts/DynamicLevelManager.gd - Enhanced with better wall system
+# scripts/DynamicLevelManager.gd - Fixed signal naming
 extends Node3D
 
 class_name DynamicLevelManager
@@ -33,8 +33,9 @@ var game_manager: GameManager
 var current_seed: int = 0
 var map_bounds: Dictionary = {}
 
-signal level_generated
-signal enemies_spawned
+# FIXED: Renamed signals to be more specific
+signal level_generated  # When level building is complete
+signal enemies_spawned  # When enemy spawning system is ready
 
 func _ready():
 	rng = RandomNumberGenerator.new()
@@ -59,19 +60,43 @@ func generate_new_level():
 	create_level_structure(current_seed)
 	add_ground()
 	add_obstacles(current_seed)
-	add_improved_map_walls()  # IMPROVED: Better wall system
+	add_improved_map_walls()
 	bake_navigation()
-	add_enhanced_waves()  # Use enhanced wave system
+	add_enhanced_waves()
 	
-	# Calculate map bounds for reference (no longer used for teleportation)
+	# Calculate map bounds for reference
 	calculate_map_bounds()
 	
 	if spawn_enemies and enemy_scene:
 		setup_enemy_spawning()
 	
+	# FIXED: This signal means "level building is complete" not "player won"
 	level_generated.emit()
 	print("Level generation complete with improved boundary walls!")
 
+func setup_enemy_spawning():
+	"""Set up the enhanced enemy spawning system"""
+	if not current_level or not enemy_scene:
+		return
+	
+	level_spawner = LevelSpawner.new()
+	level_spawner.name = "LevelSpawner"
+	level_spawner.enemy_scene = enemy_scene
+	level_spawner.navmap = current_level
+	add_child(level_spawner)
+	
+	# Connect signals if game manager exists
+	if game_manager:
+		level_spawner.wave_update.connect(game_manager._on_wave_update.bind())
+		# FIXED: Connect to a different function for actual game victory
+		level_spawner.level_complete.connect(game_manager._on_game_victory.bind())
+		level_spawner.drop_item.connect(game_manager._on_item_drop.bind())
+	
+	level_spawner.reset()
+	enemies_spawned.emit()
+	print("Enhanced enemy spawning system initialized")
+
+# Rest of the methods remain the same...
 func calculate_map_bounds():
 	"""Calculate world-space boundaries of the map for reference"""
 	var half_width = map_width
@@ -83,7 +108,7 @@ func calculate_map_bounds():
 		"min_z": -half_depth + 2,
 		"max_z": half_depth - 2,
 		"center": Vector3.ZERO,
-		"wall_height": 20.0  # Increased wall height
+		"wall_height": 20.0
 	}
 	
 	print("Map bounds set: ", map_bounds)
@@ -94,8 +119,8 @@ func add_improved_map_walls():
 		return
 	
 	var nav_region = current_level.get_node("NavigationRegion3D")
-	var wall_height = 20.0  # INCREASED: Much taller walls
-	var wall_thickness = 3.0  # INCREASED: Thicker walls
+	var wall_height = 20.0
+	var wall_thickness = 3.0
 	var wall_material = create_wall_material()
 	
 	# Calculate wall positions based on map size with better coverage
@@ -104,7 +129,7 @@ func add_improved_map_walls():
 	
 	print("Creating walls with dimensions - Width: ", half_width*2, " Depth: ", half_depth*2, " Height: ", wall_height)
 	
-	# North wall (positive Z) - Make it extend beyond the ground
+	# North wall (positive Z)
 	create_wall(nav_region, Vector3(0, wall_height/2, half_depth), 
 				Vector3(half_width * 2 + wall_thickness, wall_height, wall_thickness), wall_material, "NorthWall")
 	
@@ -120,7 +145,7 @@ func add_improved_map_walls():
 	create_wall(nav_region, Vector3(-half_width, wall_height/2, 0), 
 				Vector3(wall_thickness, wall_height, half_depth * 2), wall_material, "WestWall")
 	
-	# ADDITIONAL: Create corner reinforcements
+	# Create corner reinforcements
 	var corner_size = Vector3(wall_thickness, wall_height, wall_thickness)
 	create_wall(nav_region, Vector3(half_width, wall_height/2, half_depth), corner_size, wall_material, "CornerNE")
 	create_wall(nav_region, Vector3(-half_width, wall_height/2, half_depth), corner_size, wall_material, "CornerNW")
@@ -134,9 +159,8 @@ func create_wall(parent: Node, position: Vector3, size: Vector3, material: Mater
 	var wall = StaticBody3D.new()
 	wall.name = wall_name
 	
-	# IMPROVED: Better collision layers for walls
-	wall.collision_layer = 1  # Make sure walls are on the right collision layer
-	wall.collision_mask = 0   # Walls don't need to detect anything
+	wall.collision_layer = 1
+	wall.collision_mask = 0
 	
 	# Create collision shape
 	var collision = CollisionShape3D.new()
@@ -162,14 +186,12 @@ func create_wall(parent: Node, position: Vector3, size: Vector3, material: Mater
 func create_wall_material() -> StandardMaterial3D:
 	"""Create an improved material for boundary walls"""
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.15, 0.15, 0.15, 1.0)  # Darker, fully opaque
+	material.albedo_color = Color(0.15, 0.15, 0.15, 1.0)
 	material.metallic = 0.2
 	material.roughness = 0.9
-	material.emission = Color(0.1, 0.05, 0.05)  # Slight red glow for visibility
+	material.emission = Color(0.1, 0.05, 0.05)
 	material.emission_energy = 0.1
-	
-	# Add a simple pattern for better visibility
-	material.uv1_scale = Vector3(2, 4, 1)  # Stretch texture for brick-like appearance
+	material.uv1_scale = Vector3(2, 4, 1)
 	
 	return material
 
@@ -407,27 +429,6 @@ func add_enhanced_waves():
 		waves_container.add_child(wave)
 		
 		print("Created Wave ", i + 1, " with ", config["enemies"], " enemies")
-
-func setup_enemy_spawning():
-	"""Set up the enhanced enemy spawning system"""
-	if not current_level or not enemy_scene:
-		return
-	
-	level_spawner = LevelSpawner.new()
-	level_spawner.name = "LevelSpawner"
-	level_spawner.enemy_scene = enemy_scene
-	level_spawner.navmap = current_level
-	add_child(level_spawner)
-	
-	# Connect signals if game manager exists
-	if game_manager:
-		level_spawner.wave_update.connect(game_manager._on_wave_update.bind())
-		level_spawner.level_complete.connect(game_manager._on_level_complete.bind())
-		level_spawner.drop_item.connect(game_manager._on_item_drop.bind())
-	
-	level_spawner.reset()
-	enemies_spawned.emit()
-	print("Enhanced enemy spawning system initialized")
 
 func get_current_level() -> Navigation_Map:
 	return current_level

@@ -1,4 +1,3 @@
-# Spawning/LevelSpawner.gd - Fixed wave completion detection
 extends Node3D
 
 class_name LevelSpawner
@@ -19,7 +18,7 @@ var waves: Array = []
 var current_wave: Wave
 var current_wave_number: int = -1
 var active_enemies: Array = []
-var game_started: bool = false  # NEW: Track if game has actually started
+var game_started: bool = false
 
 signal level_complete
 signal wave_update(wave_number: int)
@@ -55,12 +54,13 @@ func create_default_wave():
 	start_next_wave()
 
 func start_next_wave():
-	# CRITICAL FIX: Check if we've completed all waves BEFORE incrementing
+	# Check if we've completed all waves BEFORE incrementing
 	if current_wave_number + 1 >= waves.size():
 		print("LevelSpawner: All waves completed!")
 		level_complete.emit()
 		return
 	
+	# Reset counters for new wave
 	enemies_killed_this_wave = 0
 	current_wave_number += 1
 	
@@ -68,7 +68,7 @@ func start_next_wave():
 		current_wave = waves[current_wave_number]
 		enemies_remaining_to_spawn = current_wave.num_enemies
 		
-		# CRITICAL: Only set game_started to true AFTER we have a valid wave with enemies
+		# Only set game_started to true AFTER we have a valid wave with enemies
 		if current_wave.num_enemies > 0:
 			game_started = true
 			print("LevelSpawner: Game officially started with wave ", current_wave_number + 1)
@@ -89,7 +89,7 @@ func start_next_wave():
 
 func reset():
 	current_wave_number = -1
-	game_started = false  # Reset game started state
+	game_started = false
 	
 	# Clear existing enemies
 	for enemy in active_enemies:
@@ -146,7 +146,7 @@ func spawn_enemy():
 	# Add to groups
 	enemy.add_to_group("enemies")
 	
-	# IMPORTANT: Connect to enemy death signal
+	# Connect to enemy death signal
 	if enemy.has_signal("died"):
 		enemy.died.connect(_on_enemy_died.bind(enemy))
 		print("LevelSpawner: Connected to enemy death signal")
@@ -156,10 +156,11 @@ func spawn_enemy():
 	active_enemies.append(enemy)
 	enemies_remaining_to_spawn -= 1
 	
-	print("LevelSpawner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size())
+	#print("LevelSpawner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size())ner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size()")
 
+	
 func _on_enemy_died(enemy):
-	"""Handle enemy death - CRITICAL for wave progression"""
+	"""Handle enemy death - Wave progression logic"""
 	print("LevelSpawner: Enemy died! Processing...")
 	
 	# Remove from active list
@@ -176,7 +177,7 @@ func _on_enemy_died(enemy):
 			drop_item.emit(current_wave.DropItem)
 			print("LevelSpawner: Item dropped!")
 	
-	# CRITICAL FIX: Only check wave completion if game started AND we have spawned enemies
+	# Only check wave completion if game started AND we have spawned enemies
 	if not game_started or current_wave_number < 0:
 		print("LevelSpawner: Game not started or no valid wave, ignoring death")
 		return
@@ -186,7 +187,7 @@ func _on_enemy_died(enemy):
 	
 	print("LevelSpawner: Wave check - All spawned: ", all_spawned, " All dead: ", all_dead)
 	
-	# ADDITIONAL CHECK: Make sure we actually had enemies to begin with
+	# Complete wave if we've spawned and killed all enemies
 	if all_spawned and all_dead and current_wave and current_wave.num_enemies > 0:
 		print("LevelSpawner: Wave ", current_wave_number + 1, " completed! Starting next wave...")
 		await get_tree().create_timer(2.0).timeout  # Brief pause

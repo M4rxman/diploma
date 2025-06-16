@@ -1,4 +1,3 @@
-# scripts/GameManager.gd - Fixed game manager without teleportation
 extends Node3D
 
 class_name GameManager
@@ -68,7 +67,7 @@ func _input(event):
 		save_current_game()
 	elif event.is_action_pressed("load_game"):
 		load_saved_game()
-	elif event.is_action_pressed("regenerate_level"):  # Add this action to input map (R key)
+	elif event.is_action_pressed("regenerate_level"):  # R key
 		regenerate_current_level()
 
 func _physics_process(delta: float) -> void:
@@ -96,14 +95,28 @@ func handle_mouse_cursor():
 		player.look_at(horizontal_stabilization, Vector3.UP)
 
 func _on_level_generated():
-	"""Called when the level generation is complete"""
-	print("Level generated successfully!")
+	"""Called when the level generation is complete - NOT when player wins"""
+	print("Level building completed successfully!")
 	
 	# Clear any existing UI messages when level is regenerated
 	if game_ui:
 		clear_ui_messages()
 	
 	call_deferred("try_load_saved_game")
+
+func _on_game_victory():
+	"""Called when the player actually wins the game (all waves completed)"""
+	if current_wave < 1:
+		return 
+	print("Player has won the game! All waves completed!")
+	level_completed = true
+	level_completed_signal.emit()
+	
+	# Show completion message
+	if game_ui and game_ui.has_method("show_level_complete_message"):
+		game_ui.show_level_complete_message()
+	
+	print("Press R to generate a new level")
 
 func clear_ui_messages():
 	"""Clear death and victory messages from UI"""
@@ -141,13 +154,13 @@ func start_new_game():
 	game_started = true
 	level_completed = false
 	
-	# IMPORTANT: Reset player stats when starting new game
+	# Reset player stats when starting new game
 	if player:
-		if player.has_method("heal"):
-			player.heal(player.max_health)  # Full heal
-		if player.has_method("add_ammo"):
-			player.ammo = player.max_ammo  # Full ammo reload
-			player.ammo_changed.emit(player.ammo, player.max_ammo)
+		# Reset basic properties that exist
+		if player.get("health"):
+			player.health = player.max_health
+		if player.get("ammo"):
+			player.ammo = player.max_ammo
 		print("Player stats reset - Health: ", player.health, " Ammo: ", player.ammo)
 	
 	# Position player at center of generated level
@@ -237,16 +250,9 @@ func _on_wave_update(wave_number: int):
 		game_ui._on_wave_changed(wave_number)
 
 func _on_level_complete():
-	"""Called when all waves are completed"""
-	print("Level completed! Player wins!")
-	level_completed = true
-	level_completed_signal.emit()
-	
-	# Show completion message
-	if game_ui and game_ui.has_method("show_level_complete_message"):
-		game_ui.show_level_complete_message()
-	
-	print("Press R to generate a new level")
+	"""DEPRECATED: This was causing the bug - kept for compatibility"""
+	print("WARNING: _on_level_complete called - this should not happen anymore!")
+	# Don't show victory message here anymore
 
 func _on_wave_complete(wave_number: int):
 	"""Called when a single wave is completed"""
@@ -285,6 +291,9 @@ func _on_player_died():
 func _on_player_respawned():
 	"""Handle player respawn"""
 	print("Player has respawned!")
+	
+	# Make sure UI is cleared
+	clear_ui_messages()
 	
 	# Resume enemy spawning
 	var spawner = get_level_spawner()
@@ -326,9 +335,6 @@ func get_ai_status() -> bool:
 	if enemies.size() > 0 and enemies[0].has_method("_get_ai_status"):
 		return enemies[0]._get_ai_status()
 	return false
-
-# REMOVED: Boundary checking teleportation code
-# Now we rely on physical walls instead
 
 # Statistics and debugging
 func get_game_stats() -> Dictionary:
@@ -394,7 +400,3 @@ func clear_all_enemies():
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	print("All enemies cleared!")
-
-# Legacy function names for compatibility
-func _on_item_drop_legacy(item_scene: PackedScene):
-	_on_item_drop(item_scene)

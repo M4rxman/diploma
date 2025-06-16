@@ -1,4 +1,4 @@
-# ui/GameUI.gd - Fixed UI system with proper message clearing
+# ui/GameUI.gd - Fixed UI system with crosshair removed
 extends Control
 
 # UI Elements
@@ -7,7 +7,7 @@ extends Control
 @onready var ammo_label: Label
 @onready var wave_label: Label
 @onready var enemy_count_label: Label
-@onready var crosshair: TextureRect
+# REMOVED: @onready var crosshair: TextureRect
 
 # Reference to player and game manager for updates
 var player: Node3D
@@ -158,18 +158,7 @@ func setup_ui_elements():
 	enemy_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wave_container.add_child(enemy_count_label)
 	
-	# Crosshair (center)
-	crosshair = TextureRect.new()
-	crosshair.name = "Crosshair"
-	var crosshair_size = Vector2(32, 32)
-	var viewport_center = get_viewport().get_visible_rect().size / 2
-	crosshair.position = viewport_center - crosshair_size / 2
-	crosshair.size = crosshair_size
-	crosshair.modulate = Color(1, 1, 1, 0.8)
-	
-	# Create simple crosshair texture programmatically
-	create_crosshair_texture()
-	add_child(crosshair)
+	# REMOVED: Crosshair creation code
 	
 	# Instructions (bottom-left)
 	var instructions = Label.new()
@@ -180,32 +169,9 @@ func setup_ui_elements():
 	instructions.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	add_child(instructions)
 
-func create_crosshair_texture():
-	"""Create a simple crosshair texture"""
-	var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
-	image.fill(Color.TRANSPARENT)
-	
-	# Draw crosshair lines
-	for i in range(32):
-		# Horizontal line
-		if i >= 14 and i <= 18:
-			for j in range(6, 26):
-				if j == 15 or j == 16:  # Center gap
-					continue
-				image.set_pixel(j, i, Color.WHITE)
-		
-		# Vertical line
-		if i >= 6 and i <= 26:
-			for j in range(14, 18):
-				if i == 15 or i == 16:  # Center gap
-					continue
-				image.set_pixel(j, i, Color.WHITE)
-	
-	var texture = ImageTexture.new()
-	texture.set_image(image)
-	crosshair.texture = texture
+# REMOVED: create_crosshair_texture function
 
-# NEW: Function to clear all messages when level is regenerated
+# Function to clear all messages when level is regenerated
 func clear_all_messages():
 	"""Clear all temporary UI messages (death, victory, etc.)"""
 	print("Clearing all UI messages")
@@ -298,7 +264,7 @@ func _on_enemies_count_changed(count: int):
 func show_wave_complete_message(wave_number: int):
 	"""Show wave completion message with supplies info"""
 	var message = Label.new()
-	message.name = "WaveCompleteMessage_" + str(wave_number)  # Give it a specific name
+	message.name = "WaveCompleteMessage_" + str(wave_number)
 	message.text = "WAVE " + str(wave_number) + " COMPLETE!\nSupplies incoming!"
 	message.add_theme_font_size_override("font_size", 32)
 	message.add_theme_color_override("font_color", Color.GREEN)
@@ -314,7 +280,7 @@ func show_wave_complete_message(wave_number: int):
 func show_level_complete_message():
 	"""Show level completion message"""
 	var message = Label.new()
-	message.name = "LevelCompleteMessage"  # Give it a specific name
+	message.name = "LevelCompleteMessage"
 	message.text = "LEVEL COMPLETE!\nPress R for new level"
 	message.add_theme_font_size_override("font_size", 42)
 	message.add_theme_color_override("font_color", Color.GOLD)
@@ -408,11 +374,7 @@ func _process(_delta):
 		if wave_container:
 			wave_container.position.x = get_viewport().get_visible_rect().size.x - 200
 	
-	# Keep crosshair centered
-	if crosshair:
-		var viewport_center = get_viewport().get_visible_rect().size / 2
-		var crosshair_size = crosshair.size
-		crosshair.position = viewport_center - crosshair_size / 2
+	# REMOVED: Crosshair centering code
 	
 	# Update instructions position
 	var instructions = get_node_or_null("Instructions")

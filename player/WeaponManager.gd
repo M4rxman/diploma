@@ -36,7 +36,7 @@ const WEAPON_STATS = {
 		"name": "Shotgun"
 	},
 	WeaponType.MORTAR: {
-		"damage": 100,
+		"damage": 200,
 		"range": 50.0,
 		"cooldown": 2.0,
 		"color": Color(1, 0, 0),

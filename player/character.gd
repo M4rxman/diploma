@@ -1,4 +1,4 @@
-# player/character.gd - Fixed mortar targeting and RigidBody movement
+# player/character.gd - Fixed respawn to regenerate level
 extends RigidBody3D
 
 @onready var feet = $Feet  
@@ -6,9 +6,9 @@ extends RigidBody3D
 @onready var weapon_system = $WeaponManager
 
 @export var mortar_shell_scene: PackedScene
-@export var mortar_launch_angle: float = 60.0  # INCREASED angle for higher arc
-@export var mortar_min_range: float = 3.0      # REDUCED min range
-@export var mortar_max_range: float = 25.0     # REDUCED max range
+@export var mortar_launch_angle: float = 60.0
+@export var mortar_min_range: float = 3.0
+@export var mortar_max_range: float = 25.0
 @onready var launch_point = $"."
 
 var health := 100
@@ -86,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
 	
-	# CORRECT MOVEMENT - FIXED AXES PROPERLY
+	# Movement
 	var direction = Vector3(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
 		0.0,
@@ -131,7 +131,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if is_dead:
 		return
 		
-	# CORRECT MOVEMENT INPUT - EXACT COPY FROM YOUR WORKING VERSION
+	# Movement input
 	var move_input = Vector3(
 		Input.get_action_strength("move_left") - Input.get_action_strength("move_right"),
 		0.0,
@@ -185,18 +185,35 @@ func _change_death_color(progress: float):
 				material.set_shader_parameter("base_color", death_color)
 
 func offer_respawn():
-	print("Press SPACE to respawn or ESC for main menu")
+	print("Press SPACE to respawn and regenerate level, or ESC for main menu")
 	
 	while is_dead:
 		if Input.is_action_just_pressed("jump"):
-			respawn()
+			respawn_and_regenerate()
 			break
 		elif Input.is_action_just_pressed("ui_cancel"):
 			get_tree().quit()
 			break
 		await get_tree().process_frame
 
+func respawn_and_regenerate():
+	"""FIXED: Respawn player and regenerate level like pressing R"""
+	print("Respawning player and regenerating level...")
+	
+	# First regenerate the level
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager and game_manager.has_method("regenerate_current_level"):
+		print("Triggering level regeneration...")
+		game_manager.regenerate_current_level()
+		
+		# Wait for level to regenerate
+		await get_tree().create_timer(1.0).timeout
+	
+	# Then respawn the player
+	respawn()
+
 func respawn():
+	"""Reset player state without regenerating level"""
 	is_dead = false
 	health = max_health
 	ammo = max_ammo
@@ -217,7 +234,7 @@ func respawn():
 	ammo_changed.emit(ammo, max_ammo)
 	player_respawned.emit()
 	
-	# IMPORTANT: Clear any lingering death UI
+	# Clear any lingering death UI
 	var game_ui = get_tree().get_first_node_in_group("game_ui")
 	if not game_ui:
 		# Try to find it in the scene tree
@@ -261,7 +278,7 @@ func _try_interact():
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
 
-# FIXED MORTAR FUNCTIONS - Completely rewritten for better targeting
+# Mortar functions (unchanged)
 func _fire_mortar_at_cursor():
 	if is_dead or not mortar_shell_scene:
 		print("Cannot fire mortar: dead or no scene")
@@ -278,9 +295,9 @@ func _fire_mortar_at_cursor():
 	var mouse_pos = get_viewport().get_mouse_position()
 	print("Mouse position: ", mouse_pos)
 	
-	# Create ray from camera through mouse position - SHORTENED RANGE
+	# Create ray from camera through mouse position
 	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * 100  # REDUCED from 1000 to 100
+	var to = from + camera.project_ray_normal(mouse_pos) * 100
 	
 	print("Ray from: ", from, " to: ", to)
 	
@@ -288,7 +305,7 @@ func _fire_mortar_at_cursor():
 	var space_state = get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [self]
-	query.collision_mask = 1  # Only hit terrain/static objects
+	query.collision_mask = 1
 	
 	var result = space_state.intersect_ray(query)
 	
@@ -296,9 +313,9 @@ func _fire_mortar_at_cursor():
 		print("Hit target at: ", result.position)
 		_fire_mortar_at_position(result.position)
 	else:
-		# If no collision, fire at much closer range in that direction
-		var fallback_target = from + camera.project_ray_normal(mouse_pos) * 20  # REDUCED from mortar_max_range to 20
-		fallback_target.y = 0  # Place on ground level
+		# If no collision, fire at fallback target
+		var fallback_target = from + camera.project_ray_normal(mouse_pos) * 20
+		fallback_target.y = 0
 		print("No collision, using fallback target: ", fallback_target)
 		_fire_mortar_at_position(fallback_target)
 
@@ -321,7 +338,7 @@ func _fire_mortar_at_position(target_pos: Vector3):
 	get_tree().current_scene.add_child(shell)
 	
 	# Position shell at launch point
-	var launch_pos = global_position + Vector3(0, 1.5, 0)  # Launch from above player
+	var launch_pos = global_position + Vector3(0, 1.5, 0)
 	shell.global_position = launch_pos
 	
 	print("Shell created at: ", shell.global_position)
@@ -335,7 +352,7 @@ func _fire_mortar_at_position(target_pos: Vector3):
 		if look_direction.length() > 0:
 			look_at(global_position + look_direction, Vector3.UP)
 		
-		# Launch the shell using the new method
+		# Launch the shell
 		if shell.has_method("launch_at_target"):
 			shell.launch_at_target(target_pos)
 			print("Launched shell using launch_at_target method")
