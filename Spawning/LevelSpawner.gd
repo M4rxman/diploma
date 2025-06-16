@@ -260,22 +260,28 @@ func complete_all_waves():
 	print("ALL WAVES COMPLETED!")
 	level_complete.emit()
 
+
 func get_random_spawn_position() -> Vector3:
 	"""Get a random valid spawn position"""
+	var spawn_pos: Vector3
+	
 	if navmap and navmap.has_method("get_random_empty_vec3"):
-		return navmap.get_random_empty_vec3()
+		spawn_pos = navmap.get_random_empty_vec3()
+		# Ensure enemies spawn well above ground
+		spawn_pos.y = 3.0
+		return spawn_pos
 	
 	# Fallback to basic random positioning
 	for i in range(10):  # Max 10 attempts
 		var x = randf_range(-15, 15)
 		var z = randf_range(-15, 15)
-		var spawn_pos = Vector3(x, 2, z)
+		spawn_pos = Vector3(x, 3.0, z)  # Higher spawn height
 		
 		if is_position_clear(spawn_pos):
 			return spawn_pos
 	
-	# Final fallback
-	return Vector3(randf_range(-10, 10), 2, randf_range(-10, 10))
+	# Final fallback with higher spawn
+	return Vector3(randf_range(-10, 10), 3.0, randf_range(-10, 10))
 
 func is_position_clear(pos: Vector3) -> bool:
 	"""Check if spawn position is clear of obstacles"""
