@@ -1,4 +1,4 @@
-# scripts/generic_enemy.gd - Fixed enemy AI that actually chases player
+# Enhanced generic_enemy.gd - Proper death signaling for wave system
 extends RigidBody3D
 
 @onready var feet = $Feet
@@ -6,15 +6,15 @@ extends RigidBody3D
 @export var ai_is_active = true
 
 @export var TARGET_SPEED := 4.0
-const TARGET_JUMP = 15.0  # Reduced jump force
+const TARGET_JUMP = 15.0
 const TARGET_GRAVITY = 200.0
 @export var MAX_HEALTH := 40
 
-# Combat settings - reduced knockback and damage
+# Combat settings
 @export var attack_damage := 15
 @export var attack_range := 1.0
 @export var attack_cooldown := 1.5
-@export var knockback_force := 3.0  # Reduced knockback
+@export var knockback_force := 3.0
 
 # Jumping logic settings
 @export var jump_height_threshold := 1.5
@@ -27,12 +27,16 @@ var _pid := Pid3D.new(25.0, 0.1, 1.0)
 var health: int = MAX_HEALTH
 var last_target_position: Vector3
 var stuck_timer: float = 0.0
-var max_stuck_time: float = 2.0  # Reduced stuck time
+var max_stuck_time: float = 2.0
 
 # Combat timing
 var last_attack_time: float = 0.0
 var last_jump_time: float = 0.0
 
+# Death handling
+var is_dying: bool = false
+
+# IMPORTANT: Death signal for wave management
 signal died
 
 func _ready() -> void:
@@ -64,19 +68,26 @@ func _ready() -> void:
 		feet.enabled = true
 	
 	last_target_position = global_position
+	
+	# Add to enemies group for wave management
+	add_to_group("enemies")
+	
 	print("Enemy initialized at: ", global_position, " with proper collision")
 
 func _physics_process(delta: float) -> void:
+	if is_dying:
+		return
+		
 	_apply_gravity(delta)
 	
 	if not target or not ai_is_active:
 		return
 	
 	# Check if target is dead
-	if target.get("is_adead") and target.is_dead:
+	if target.get("is_dead") and target.is_dead:
 		return
 	
-	# Simple direct movement towards player - more reliable than navigation
+	# Simple direct movement towards player
 	var distance_to_target = global_position.distance_to(target.global_position)
 	
 	# Attack if close enough
@@ -86,7 +97,7 @@ func _physics_process(delta: float) -> void:
 	
 	# Move directly towards player
 	var direction_to_player = (target.global_position - global_position)
-	direction_to_player.y = 0  # Keep horizontal
+	direction_to_player.y = 0
 	direction_to_player = direction_to_player.normalized()
 	
 	if direction_to_player.length() > 0.1:
@@ -96,10 +107,10 @@ func _physics_process(delta: float) -> void:
 		
 		# Apply movement force towards player
 		var target_velocity = direction_to_player * TARGET_SPEED
-		target_velocity.y = linear_velocity.y  # Preserve Y velocity
+		target_velocity.y = linear_velocity.y
 		
 		var velocity_error = target_velocity - linear_velocity
-		velocity_error.y = 0  # Don't control Y with PID
+		velocity_error.y = 0
 		
 		var correction_impulse = _pid.update(velocity_error, delta) * 0.01
 		apply_impulse(correction_impulse)
@@ -107,14 +118,12 @@ func _physics_process(delta: float) -> void:
 		# Face the player
 		look_at(global_position + direction_to_player, Vector3.UP)
 	
-	# Check if stuck (simplified)
 	_check_if_stuck(delta)
 
 func _should_jump_to_target() -> bool:
 	if not is_on_floor:
 		return false
 	
-	# Check jump cooldown
 	var current_time = Time.get_time_dict_from_system()["second"]
 	var time_since_last_jump = current_time - last_jump_time
 	if time_since_last_jump < jump_cooldown:
@@ -123,12 +132,10 @@ func _should_jump_to_target() -> bool:
 	var target_pos = target.global_position
 	var my_pos = global_position
 	
-	# Check if target is significantly higher
 	var height_difference = target_pos.y - my_pos.y
 	if height_difference < jump_height_threshold:
 		return false
 	
-	# Check if target is within reasonable jump distance
 	var horizontal_distance = Vector2(target_pos.x - my_pos.x, target_pos.z - my_pos.z).length()
 	return horizontal_distance <= max_jump_distance
 
@@ -140,14 +147,11 @@ func _attempt_jump_to_target():
 	var direction_to_target = (target_pos - global_position).normalized()
 	direction_to_target.y = 0
 	
-	# Apply jump with forward momentum
 	var jump_force = Vector3.UP * TARGET_JUMP + direction_to_target * TARGET_SPEED * 0.3
 	apply_impulse(jump_force)
 	
 	is_on_floor = false
 	last_jump_time = Time.get_time_dict_from_system()["second"]
-	
-	print("Enemy jumping towards target!")
 
 func _try_attack():
 	var current_time = Time.get_time_dict_from_system()["second"]
@@ -182,7 +186,6 @@ func _check_if_stuck(delta: float):
 	if movement < 0.1:
 		stuck_timer += delta
 		if stuck_timer > max_stuck_time:
-			# Try to unstick with a small jump
 			if is_on_floor:
 				apply_impulse(Vector3.UP * TARGET_JUMP * 0.5)
 				print("Enemy: Trying to unstick with jump")
@@ -200,6 +203,9 @@ func _apply_gravity(delta: float) -> void:
 		apply_central_impulse(Vector3(0.0, -TARGET_GRAVITY, 0.0) * delta)
 
 func take_damage(amount: int) -> void:
+	if is_dying:
+		return
+		
 	health -= amount
 	print("Enemy took ", amount, " damage. Health: ", health)
 	
@@ -222,14 +228,32 @@ func _flash_red(progress: float):
 				material.emission = Color.RED * flash_intensity
 
 func die() -> void:
-	print("Enemy defeated!")
+	if is_dying:
+		return
+		
+	is_dying = true
+	print("Enemy defeated! Emitting death signal...")
+	
+	# CRITICAL: Emit death signal for wave management
 	died.emit()
 	
+	# Visual death effect
 	var tween = create_tween()
 	tween.parallel().tween_property(self, "scale", Vector3.ZERO, 0.5)
+	tween.parallel().tween_property(self, "modulate", Color.TRANSPARENT, 0.5)
+	
+	# Remove from enemies group immediately
+	remove_from_group("enemies")
+	
+	# Disable collision and AI
+	collision_layer = 0
+	collision_mask = 0
+	ai_is_active = false
+	
+	# Queue free after animation
 	tween.tween_callback(queue_free)
 
-# AI control methods
+# AI control methods for testing
 func _set_ai_to_false() -> void:
 	ai_is_active = false
 	print("Enemy AI disabled")
@@ -251,3 +275,10 @@ func set_damage(new_damage: int):
 
 func set_speed(new_speed: float):
 	TARGET_SPEED = new_speed
+
+# Force death for debugging
+func force_die():
+	"""Force enemy to die - useful for testing wave completion"""
+	print("DEBUG: Force killing enemy")
+	health = 0
+	die()

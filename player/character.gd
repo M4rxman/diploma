@@ -1,4 +1,4 @@
-# player/character.gd - Fixed respawn to regenerate level
+# player/character.gd - Fixed character with working weapon system
 extends RigidBody3D
 
 @onready var feet = $Feet  
@@ -48,16 +48,17 @@ func _ready() -> void:
 	# Connect weapon system signals
 	if weapon_system:
 		weapon_system.mortar_shell_scene = mortar_shell_scene
-		weapon_system.weapon_changed.connect(_on_weapon_changed)
+		if weapon_system.has_signal("weapon_changed"):
+			weapon_system.weapon_changed.connect(_on_weapon_changed)
 	
 	# Set up feet raycast
 	if feet:
 		feet.target_position = Vector3(0, -1.0, 0)
 		feet.enabled = true
 	
-	# Remove any MortarShell child nodes that might be spawning automatically
+	# Remove any auto-spawned mortar shell nodes
 	for child in get_children():
-		if child.name == "MortarShell" or child.get_script() == mortar_shell_scene:
+		if child.name == "MortarShell" or (child.get_script() and child.get_script() == mortar_shell_scene):
 			print("Removing auto-spawned mortar shell: ", child.name)
 			child.queue_free()
 	
@@ -65,8 +66,7 @@ func _ready() -> void:
 	health_changed.emit(health, max_health)
 	ammo_changed.emit(ammo, max_ammo)
 	
-	print("Character mesh setup - Visible:", has_node("MeshInstance3D"))
-	print("Player initialized at position:", global_position)
+	print("Character initialized at position:", global_position)
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
@@ -75,12 +75,18 @@ func _physics_process(delta: float) -> void:
 	_update_floor_detection()
 	_apply_gravity(delta)
 	
-	# Fire current weapon
+	# FIXED: Use weapon system for all weapons, not just mortar
 	if Input.is_action_just_pressed("attack"):
-		if weapon_system and ammo > 0:
+		if weapon_system:
 			weapon_system.fire()
-			ammo -= 1
-			ammo_changed.emit(ammo, max_ammo)
+			print("Weapon fired via WeaponManager!")
+			
+			# Only consume ammo for non-melee weapons
+			if weapon_system.current_weapon != weapon_system.WeaponType.SWORD and ammo > 0:
+				ammo -= 1
+				ammo_changed.emit(ammo, max_ammo)
+		else:
+			print("No weapon system found!")
 	
 	# Interact
 	if Input.is_action_just_pressed("interact"):
@@ -197,7 +203,7 @@ func offer_respawn():
 		await get_tree().process_frame
 
 func respawn_and_regenerate():
-	"""FIXED: Respawn player and regenerate level like pressing R"""
+	"""Respawn player and regenerate level"""
 	print("Respawning player and regenerating level...")
 	
 	# First regenerate the level
@@ -237,7 +243,6 @@ func respawn():
 	# Clear any lingering death UI
 	var game_ui = get_tree().get_first_node_in_group("game_ui")
 	if not game_ui:
-		# Try to find it in the scene tree
 		var ui_nodes = get_tree().get_nodes_in_group("ui")
 		for ui_node in ui_nodes:
 			if ui_node.has_method("clear_all_messages"):
@@ -278,7 +283,7 @@ func _try_interact():
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
 
-# Mortar functions (unchanged)
+# Mortar functions (for mortar weapon specifically)
 func _fire_mortar_at_cursor():
 	if is_dead or not mortar_shell_scene:
 		print("Cannot fire mortar: dead or no scene")

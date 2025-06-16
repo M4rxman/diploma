@@ -1,4 +1,4 @@
-# player/WeaponManager.gd - Fixed knockback and combat
+# player/WeaponManager.gd - Fixed weapon system with proper damage
 extends Node3D
 
 enum WeaponType {
@@ -13,7 +13,7 @@ const WEAPON_STATS = {
 		"damage": 50,
 		"range": 3.0,
 		"cooldown": 0.5,
-		"knockback": 100.0,  # Further reduced
+		"knockback": 50.0,  # Reduced knockback
 		"color": Color(0, 1, 0),
 		"name": "Sword"
 	},
@@ -21,7 +21,7 @@ const WEAPON_STATS = {
 		"damage": 25,
 		"range": 50.0,
 		"cooldown": 0.3,
-		"knockback": 20.0,  # Much smaller knockback
+		"knockback": 10.0,  # Much smaller knockback
 		"color": Color(1, 1, 0),
 		"name": "Pistol"
 	},
@@ -31,7 +31,7 @@ const WEAPON_STATS = {
 		"cooldown": 0.8,
 		"pellets": 5,
 		"spread": 15.0,
-		"knockback": 15.0,  # Minimal knockback
+		"knockback": 8.0,  # Minimal knockback per pellet
 		"color": Color(1, 0.5, 0),
 		"name": "Shotgun"
 	},
@@ -116,13 +116,16 @@ func _fire_sword():
 	if not sword_hitbox:
 		return
 	
+	# Check for wall blocking sword attack
 	var wall_check = _check_for_wall_in_front(WEAPON_STATS[WeaponType.SWORD]["range"])
 	if wall_check:
 		print("Sword blocked by wall")
 		return
 	
+	print("Firing sword!")
 	sword_hitbox.monitoring = true
 	
+	# Visual thrust effect
 	var tween = create_tween()
 	var thrust_direction = -owner_body.transform.basis.z * 0.3
 	tween.tween_property(owner_body, "position", owner_body.position + thrust_direction, 0.1)
@@ -138,7 +141,7 @@ func _check_for_wall_in_front(range: float) -> bool:
 	
 	var query = PhysicsRayQueryParameters3D.create(start_pos, end_pos)
 	query.exclude = [owner_body]
-	query.collision_mask = 1
+	query.collision_mask = 1  # Only check static bodies/walls
 	
 	var result = space_state.intersect_ray(query)
 	return not result.is_empty()
@@ -148,9 +151,9 @@ func _on_sword_hit(body):
 	
 	if body.has_method("take_damage"):
 		body.take_damage(WEAPON_STATS[WeaponType.SWORD]["damage"])
-		print("Sword dealt damage to ", body.name)
+		print("Sword dealt ", WEAPON_STATS[WeaponType.SWORD]["damage"], " damage to ", body.name)
 	
-	# Minimal knockback
+	# Apply knockback
 	if body is RigidBody3D:
 		var knockback_dir = (body.global_position - owner_body.global_position).normalized()
 		body.apply_central_impulse(knockback_dir * WEAPON_STATS[WeaponType.SWORD]["knockback"])
@@ -158,6 +161,8 @@ func _on_sword_hit(body):
 func _fire_pistol():
 	if not hitscan_raycast:
 		return
+	
+	print("Firing pistol!")
 	
 	var target = _find_best_target()
 	if target:
@@ -173,9 +178,9 @@ func _fire_pistol():
 		
 		if hit_body.has_method("take_damage"):
 			hit_body.take_damage(WEAPON_STATS[WeaponType.PISTOL]["damage"])
-			print("Pistol dealt damage to ", hit_body.name)
+			print("Pistol dealt ", WEAPON_STATS[WeaponType.PISTOL]["damage"], " damage to ", hit_body.name)
 			
-			# Very small knockback
+			# Small knockback
 			if hit_body is RigidBody3D:
 				var knockback_dir = (hit_body.global_position - owner_body.global_position).normalized()
 				hit_body.apply_central_impulse(knockback_dir * WEAPON_STATS[WeaponType.PISTOL]["knockback"])
@@ -190,12 +195,13 @@ func _fire_shotgun():
 	var spread_angle = deg_to_rad(stats["spread"])
 	var pellet_count = stats["pellets"]
 	
-	print("Shotgun firing ", pellet_count, " pellets")
+	print("Shotgun firing ", pellet_count, " pellets with ", stats["damage"], " damage each")
 	
 	for i in range(pellet_count):
 		var space_state = owner_body.get_world_3d().direct_space_state
 		var start_pos = owner_body.global_position + Vector3(0, 0.5, 0)
 		
+		# Calculate spread for each pellet
 		var spread_x = randf_range(-spread_angle, spread_angle)
 		var spread_y = randf_range(-spread_angle, spread_angle)
 		
@@ -216,20 +222,21 @@ func _fire_shotgun():
 		
 		if result:
 			var hit_body = result["collider"]
+			print("Shotgun pellet ", i+1, " hit: ", hit_body.name)
 			
 			if hit_body.has_method("take_damage"):
 				hit_body.take_damage(stats["damage"])
-				print("Shotgun pellet hit: ", hit_body.name)
+				print("Shotgun pellet dealt ", stats["damage"], " damage to ", hit_body.name)
 				
-				# Tiny knockback per pellet
+				# Small knockback per pellet
 				if hit_body is RigidBody3D:
 					var knockback_dir = (hit_body.global_position - owner_body.global_position).normalized()
 					hit_body.apply_central_impulse(knockback_dir * stats["knockback"])
 
 func _fire_mortar():
+	print("Firing mortar!")
 	if owner_body.has_method("_fire_mortar_at_cursor"):
 		owner_body._fire_mortar_at_cursor()
-		print("Mortar fired!")
 
 func _find_best_target() -> Node3D:
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -247,17 +254,18 @@ func _find_best_target() -> Node3D:
 		var angle = forward.angle_to(to_enemy)
 		
 		if angle < max_angle and distance < best_distance:
+			# Check if there's a clear line of sight
 			var space_state = owner_body.get_world_3d().direct_space_state
 			var start_pos = owner_body.global_position + Vector3(0, 0.5, 0)
 			var end_pos = enemy.global_position + Vector3(0, 0.5, 0)
 			
 			var query = PhysicsRayQueryParameters3D.create(start_pos, end_pos)
 			query.exclude = [owner_body, enemy]
-			query.collision_mask = 1
+			query.collision_mask = 1  # Only check walls/static bodies
 			
 			var wall_check = space_state.intersect_ray(query)
 			
-			if wall_check.is_empty():
+			if wall_check.is_empty():  # Clear line of sight
 				best_distance = distance
 				best_target = enemy
 	
@@ -268,7 +276,7 @@ func _aim_raycast_at_target(target: Node3D):
 		return
 		
 	var to_target = target.global_position - owner_body.global_position
-	to_target.y = 0
+	to_target.y = 0  # Keep it horizontal like classic Doom
 	
 	if to_target.length() > 0:
 		var look_direction = to_target.normalized()

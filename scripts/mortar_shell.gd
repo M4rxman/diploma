@@ -3,7 +3,7 @@ class_name Mortar_Shell
 extends RigidBody3D
 
 @export var explosion_radius: float = 10.0
-@export var explosion_damage: float = 100.0
+@export var explosion_damage: float = 200.0
 @export var explosion_force: float = 500.0
 @export var fuse_time: float = 4.0  # Increased fuse time
 @export var launch_speed: float = 30.0

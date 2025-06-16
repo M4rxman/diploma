@@ -366,29 +366,11 @@ func add_enhanced_waves():
 			"drops_ammo": false
 		},
 		{
-			"enemies": 5, 
-			"speed": 3.5, 
-			"health": 80, 
-			"damage": 12,
-			"spawn_delay": 1.8,
-			"drops_health": false,
-			"drops_ammo": true
-		},
-		{
 			"enemies": 8, 
 			"speed": 4.0, 
 			"health": 100, 
 			"damage": 15,
 			"spawn_delay": 1.5,
-			"drops_health": true,
-			"drops_ammo": true
-		},
-		{
-			"enemies": 12, 
-			"speed": 4.5, 
-			"health": 120, 
-			"damage": 18,
-			"spawn_delay": 1.2,
 			"drops_health": true,
 			"drops_ammo": true
 		},
@@ -438,6 +420,7 @@ func get_level_spawner() -> LevelSpawner:
 
 func get_map_bounds() -> Dictionary:
 	return map_bounds
+
 
 func regenerate_level():
 	"""Regenerate the level with new random settings"""

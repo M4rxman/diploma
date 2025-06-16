@@ -1,222 +1,303 @@
+# Spawning/LevelSpawner.gd - Fixed with proper reset method
 extends Node3D
 
 class_name LevelSpawner
 
-@export var enemy_scene: PackedScene
-@onready var timer: Timer
-
-var navmap: Navigation_Map:
-	set(value):
-		navmap = value
-		if navmap:
-			waves = navmap.get_waves()
-
-var enemies_remaining_to_spawn: int = 0
-var enemies_killed_this_wave: int = 0
+@export var enemy_scene: PackedScene = preload("res://scenes/generic_enemy.tscn")
 
 var waves: Array = []
-var current_wave: Wave
+var current_wave: Wave = null
 var current_wave_number: int = -1
-var active_enemies: Array = []
+var enemies_spawned_this_wave: int = 0
+var enemies_remaining_to_spawn: int = 0
+var wave_completed: bool = false
+var all_waves_completed: bool = false
 var game_started: bool = false
 
-signal level_complete
+var navmap: Navigation_Map
+var navigation_region: NavigationRegion3D
+var spawner_ready: bool = false
+
+# Timer for spawning
+var timer: Timer
+
+# Signals
 signal wave_update(wave_number: int)
+signal level_complete
 signal drop_item(item_scene: PackedScene)
 
 func _ready():
+	add_to_group("level_spawner")
+	
 	# Create timer
-	if not timer:
-		timer = Timer.new()
-		timer.name = "SpawnerTimer"
-		add_child(timer)
-		timer.timeout.connect(_on_timer_timeout)
-		print("LevelSpawner: Created timer")
+	timer = Timer.new()
+	timer.name = "SpawnerTimer"
+	timer.wait_time = 2.0
+	timer.timeout.connect(_on_timer_timeout)
+	add_child(timer)
 	
-	# Wait a bit before starting
-	await get_tree().create_timer(1.0).timeout
-	
-	if waves.size() > 0:
-		print("LevelSpawner: Starting first wave with ", waves.size(), " total waves")
-		start_next_wave()
-	else:
-		print("LevelSpawner: No waves found! Creating default wave.")
-		create_default_wave()
-
-func create_default_wave():
-	var default_wave = Wave.new()
-	default_wave.num_enemies = 3
-	default_wave.second_between_spawns = 2.0
-	default_wave.move_speed = 3.0
-	default_wave.damage = 20
-	default_wave.health = 100
-	waves = [default_wave]
-	start_next_wave()
-
-func start_next_wave():
-	# Check if we've completed all waves BEFORE incrementing
-	if current_wave_number + 1 >= waves.size():
-		print("LevelSpawner: All waves completed!")
-		level_complete.emit()
-		return
-	
-	# Reset counters for new wave
-	enemies_killed_this_wave = 0
-	current_wave_number += 1
-	
-	if current_wave_number < waves.size():
-		current_wave = waves[current_wave_number]
-		enemies_remaining_to_spawn = current_wave.num_enemies
-		
-		# Only set game_started to true AFTER we have a valid wave with enemies
-		if current_wave.num_enemies > 0:
-			game_started = true
-			print("LevelSpawner: Game officially started with wave ", current_wave_number + 1)
-		
-		wave_update.emit(current_wave_number)
-		
-		print("LevelSpawner: Starting wave ", current_wave_number + 1, " with ", enemies_remaining_to_spawn, " enemies")
-		
-		timer.wait_time = current_wave.second_between_spawns
-		timer.start()
-		
-		# Check for item drops
-		if current_wave.should_drop(enemies_killed_this_wave):
-			drop_item.emit(current_wave.DropItem)
-	else:
-		print("LevelSpawner: Level completed!")
-		level_complete.emit()
+	print("LevelSpawner initialized")
 
 func reset():
-	current_wave_number = -1
+	"""Reset the spawner for a new level"""
+	print("LevelSpawner: Resetting for new level")
+	
+	# Stop any current spawning
+	if timer:
+		timer.stop()
+	
+	# Clear current state
 	game_started = false
+	all_waves_completed = false
+	wave_completed = false
+	current_wave_number = -1
+	current_wave = null
+	enemies_spawned_this_wave = 0
+	enemies_remaining_to_spawn = 0
+	spawner_ready = false
 	
 	# Clear existing enemies
-	for enemy in active_enemies:
+	var existing_enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in existing_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
-	active_enemies.clear()
 	
-	await get_tree().create_timer(0.5).timeout
-	start_next_wave()
+	# Wait a frame for cleanup, then start
+	await get_tree().process_frame
+	
+	# Initialize waves for the new level
+	if initialize_waves():
+		# Start spawning after a short delay
+		await get_tree().create_timer(1.0).timeout
+		start_waves()
 
-func spawn_enemy():
-	if not enemy_scene:
-		print("LevelSpawner: No enemy scene assigned!")
-		return
+func initialize_waves():
+	"""Find and initialize waves from the navigation map"""
+	waves.clear()
+	
+	# Get reference to navmap if not set
+	if not navmap:
+		# Try to find it from our parent structure
+		var level_manager = get_parent()
+		if level_manager:
+			for child in level_manager.get_children():
+				if child.name == "GeneratedLevel" or child is Navigation_Map:
+					navmap = child
+					break
 	
 	if not navmap:
-		print("LevelSpawner: No navigation map assigned!")
+		print("ERROR: No navigation map found for spawner")
+		return false
+	
+	# Find the Waves container
+	var waves_container = navmap.get_node_or_null("Waves")
+	if not waves_container:
+		print("ERROR: Waves container not found")
+		return false
+	
+	print("Found Waves container with ", waves_container.get_child_count(), " children")
+	
+	# Create wave configurations with progressive difficulty
+	var wave_configs = [
+		{"enemies": 3, "health": 40.0, "damage": 15, "speed": 3.0, "spawn_delay": 2.0},
+		{"enemies": 5, "health": 55.0, "damage": 20, "speed": 3.5, "spawn_delay": 1.8},
+		{"enemies": 7, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5},
+		{"enemies": 10, "health": 85.0, "damage": 30, "speed": 4.5, "spawn_delay": 1.2},
+		{"enemies": 12, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0}
+	]
+	
+	# Convert configs to Wave objects
+	for i in range(wave_configs.size()):
+		var config = wave_configs[i]
+		var wave_data = Wave.new()
+		
+		wave_data.num_enemies = config["enemies"]
+		wave_data.health = config["health"]
+		wave_data.damage = config["damage"]
+		wave_data.move_speed = config["speed"]
+		wave_data.second_between_spawns = config["spawn_delay"]
+		
+		waves.append(wave_data)
+		print("Initialized Wave ", i + 1, " - Enemies: ", wave_data.num_enemies, " Health: ", wave_data.health)
+	
+	if waves.size() > 0:
+		spawner_ready = true
+		print("LevelSpawner ready with ", waves.size(), " waves")
+		return true
+	else:
+		print("ERROR: No waves created!")
+		return false
+
+func start_waves():
+	"""Start the wave system"""
+	if not spawner_ready:
+		print("ERROR: Spawner not ready")
+		return false
+	
+	if waves.size() == 0:
+		print("ERROR: No waves available")
+		return false
+	
+	game_started = true
+	current_wave_number = -1
+	all_waves_completed = false
+	start_next_wave()
+	return true
+
+func start_next_wave():
+	"""Start the next wave in sequence"""
+	if current_wave_number + 1 >= waves.size():
+		complete_all_waves()
 		return
 	
-	# Get spawn position
-	var location: Vector3 = navmap.get_random_empty_vec3()
+	current_wave_number += 1
+	current_wave = waves[current_wave_number]
+	enemies_spawned_this_wave = 0
+	enemies_remaining_to_spawn = current_wave.num_enemies
+	wave_completed = false
 	
-	# Create enemy
+	print("🌊 Starting Wave ", current_wave_number + 1, "/", waves.size())
+	print("   Enemies to spawn: ", current_wave.num_enemies)
+	
+	# Emit wave started signal
+	wave_update.emit(current_wave_number)
+	
+	# Start spawning timer
+	if timer:
+		timer.wait_time = current_wave.second_between_spawns
+		timer.start()
+		print("Spawning timer started")
+
+func _on_timer_timeout():
+	"""Called when spawn timer times out"""
+	if not game_started or wave_completed or all_waves_completed:
+		return
+	
+	if enemies_remaining_to_spawn <= 0:
+		timer.stop()
+		print("Wave ", current_wave_number + 1, " spawning complete")
+		return
+	
+	spawn_enemy()
+
+func spawn_enemy():
+	"""Spawn a single enemy for the current wave"""
+	if not current_wave or not enemy_scene:
+		print("ERROR: Cannot spawn enemy - no current wave or enemy scene")
+		return
+	
 	var enemy = enemy_scene.instantiate()
+	get_tree().current_scene.add_child(enemy)
 	
-	# Set enemy characteristics
+	# Set enemy properties based on current wave
 	if enemy.has_method("set_health"):
-		enemy.set_health(current_wave.health)
+		enemy.set_health(int(current_wave.health))
 	elif enemy.get("health") != null:
-		enemy.health = current_wave.health
+		enemy.health = int(current_wave.health)
 		
 	if enemy.has_method("set_damage"):
 		enemy.set_damage(current_wave.damage)
-	elif enemy.get("damage") != null:
-		enemy.damage = current_wave.damage
+	elif enemy.get("attack_damage") != null:
+		enemy.attack_damage = current_wave.damage
 		
 	if enemy.has_method("set_speed"):
 		enemy.set_speed(current_wave.move_speed)
 	elif enemy.get("TARGET_SPEED") != null:
 		enemy.TARGET_SPEED = current_wave.move_speed
 	
-	# Position enemy
-	enemy.global_position = location + Vector3(0, 1, 0)
-	
-	# Add to scene
-	var scene_root = get_tree().current_scene
-	scene_root.add_child(enemy)
+	# Position enemy at random spawn point
+	var spawn_pos = get_random_spawn_position()
+	enemy.global_position = spawn_pos
 	
 	# Enable AI
 	if enemy.has_method("_set_ai_to_true"):
 		enemy._set_ai_to_true()
-		print("LevelSpawner: Enabled AI for enemy at ", location)
-	
-	# Add to groups
-	enemy.add_to_group("enemies")
 	
 	# Connect to enemy death signal
 	if enemy.has_signal("died"):
 		enemy.died.connect(_on_enemy_died.bind(enemy))
-		print("LevelSpawner: Connected to enemy death signal")
-	else:
-		print("LevelSpawner: WARNING - Enemy has no 'died' signal!")
+		print("Connected enemy death signal")
 	
-	active_enemies.append(enemy)
+	enemies_spawned_this_wave += 1
 	enemies_remaining_to_spawn -= 1
 	
-	#print("LevelSpawner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size())ner: Spawned enemy. Remaining to spawn: ", enemies_remaining_to_spawn, " Active: ", active_enemies.size()")
+	print("Spawned enemy ", enemies_spawned_this_wave, "/", current_wave.num_enemies, " at ", spawn_pos)
 
-	
 func _on_enemy_died(enemy):
-	"""Handle enemy death - Wave progression logic"""
-	print("LevelSpawner: Enemy died! Processing...")
+	"""Handle enemy death"""
+	print("Enemy died! Checking wave completion...")
 	
-	# Remove from active list
-	if enemy in active_enemies:
-		active_enemies.erase(enemy)
+	# Brief delay to ensure enemy is processed
+	await get_tree().process_frame
 	
-	enemies_killed_this_wave += 1
+	var remaining_enemies = get_tree().get_nodes_in_group("enemies").size()
+	var spawning_complete = enemies_remaining_to_spawn <= 0
 	
-	print("LevelSpawner: Enemy removed. Killed this wave: ", enemies_killed_this_wave, " Active remaining: ", active_enemies.size())
+	print("Remaining enemies: ", remaining_enemies, " Spawning complete: ", spawning_complete)
 	
-	# Check for item drops
-	if current_wave and current_wave.should_drop(enemies_killed_this_wave):
-		if current_wave.DropItem:
-			drop_item.emit(current_wave.DropItem)
-			print("LevelSpawner: Item dropped!")
+	# Check if wave is complete
+	if spawning_complete and remaining_enemies <= 0:
+		complete_current_wave()
+
+func complete_current_wave():
+	"""Complete current wave and start next one"""
+	wave_completed = true
+	timer.stop()
 	
-	# Only check wave completion if game started AND we have spawned enemies
-	if not game_started or current_wave_number < 0:
-		print("LevelSpawner: Game not started or no valid wave, ignoring death")
-		return
+	print("Wave ", current_wave_number + 1, " completed!")
+	
+	# Brief pause before next wave
+	await get_tree().create_timer(2.0).timeout
+	
+	# Start next wave
+	start_next_wave()
+
+func complete_all_waves():
+	"""Called when all waves are completed"""
+	all_waves_completed = true
+	timer.stop()
+	
+	print("ALL WAVES COMPLETED!")
+	level_complete.emit()
+
+func get_random_spawn_position() -> Vector3:
+	"""Get a random valid spawn position"""
+	if navmap and navmap.has_method("get_random_empty_vec3"):
+		return navmap.get_random_empty_vec3()
+	
+	# Fallback to basic random positioning
+	for i in range(10):  # Max 10 attempts
+		var x = randf_range(-15, 15)
+		var z = randf_range(-15, 15)
+		var spawn_pos = Vector3(x, 2, z)
 		
-	var all_spawned = (enemies_remaining_to_spawn <= 0)
-	var all_dead = (active_enemies.size() == 0)
+		if is_position_clear(spawn_pos):
+			return spawn_pos
 	
-	print("LevelSpawner: Wave check - All spawned: ", all_spawned, " All dead: ", all_dead)
+	# Final fallback
+	return Vector3(randf_range(-10, 10), 2, randf_range(-10, 10))
+
+func is_position_clear(pos: Vector3) -> bool:
+	"""Check if spawn position is clear of obstacles"""
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(
+		pos + Vector3.UP * 2,
+		pos - Vector3.UP * 1
+	)
+	query.collision_mask = 1  # Only check static geometry
 	
-	# Complete wave if we've spawned and killed all enemies
-	if all_spawned and all_dead and current_wave and current_wave.num_enemies > 0:
-		print("LevelSpawner: Wave ", current_wave_number + 1, " completed! Starting next wave...")
-		await get_tree().create_timer(2.0).timeout  # Brief pause
-		start_next_wave()
+	var result = space_state.intersect_ray(query)
+	return not result.is_empty()  # Should hit ground
 
-func _on_timer_timeout():
-	if enemies_remaining_to_spawn > 0:
-		spawn_enemy()
-	else:
-		timer.stop()
-		print("LevelSpawner: Finished spawning all enemies for this wave")
-
+# Getter methods
 func get_enemies_remaining() -> int:
 	return enemies_remaining_to_spawn
 
-func get_active_enemy_count() -> int:
-	# Clean up invalid enemies from list
-	active_enemies = active_enemies.filter(func(enemy): return is_instance_valid(enemy))
-	return active_enemies.size()
-
 func get_current_wave_number() -> int:
-	return current_wave_number + 1
+	return current_wave_number
 
-# Debug function to force wave completion
-func debug_complete_wave():
-	print("DEBUG: Force completing current wave")
-	for enemy in active_enemies:
-		if is_instance_valid(enemy):
-			enemy.queue_free()
-	active_enemies.clear()
-	enemies_remaining_to_spawn = 0
-	_on_enemy_died(null)  # Trigger wave completion check
+func get_total_waves() -> int:
+	return waves.size()
+
+func is_spawner_ready() -> bool:
+	return spawner_ready

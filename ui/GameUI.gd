@@ -43,7 +43,7 @@ func _ready():
 		if game_manager.has_signal("enemies_count_changed"):
 			game_manager.enemies_count_changed.connect(_on_enemies_count_changed)
 		if game_manager.has_signal("level_completed_signal"):
-			game_manager.level_completed_signal.connect(_on_level_complete)
+			game_manager.level_completed_signal.connect(_on_level_completed)
 	
 	# Connect to supplies pickup signals
 	_connect_to_supplies()
@@ -323,7 +323,7 @@ func _on_player_respawned():
 	if has_node("DeathOverlay"):
 		get_node("DeathOverlay").queue_free()
 
-func _on_level_complete():
+func _on_level_completed():
 	"""Handle level completion"""
 	show_level_complete_message()
 

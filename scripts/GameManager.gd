@@ -1,3 +1,4 @@
+# scripts/GameManager.gd - Fixed with proper level regeneration and camera
 extends Node3D
 
 class_name GameManager
@@ -45,7 +46,20 @@ func _ready():
 		if player.has_signal("player_respawned"):
 			player.player_respawned.connect(_on_player_respawned)
 	
+	# Fix camera position
+	setup_camera()
+	
 	print("GameManager initialized, waiting for level generation...")
+
+func setup_camera():
+	"""Set up the camera to the correct position and angle"""
+	if has_node("Camera3D"):
+		var camera = $Camera3D
+		# Reset camera to proper isometric-like view
+		camera.global_position = Vector3(0, 20, 6)
+		camera.look_at(Vector3(0, 0, 0), Vector3.UP)
+		camera.fov = 60.0
+		print("Camera positioned at: ", camera.global_position, " looking at origin")
 
 func setup_game_ui():
 	"""Create and setup the game UI"""
@@ -95,7 +109,7 @@ func handle_mouse_cursor():
 		player.look_at(horizontal_stabilization, Vector3.UP)
 
 func _on_level_generated():
-	"""Called when the level generation is complete - NOT when player wins"""
+	"""Called when the level generation is complete"""
 	print("Level building completed successfully!")
 	
 	# Clear any existing UI messages when level is regenerated
@@ -158,9 +172,9 @@ func start_new_game():
 	if player:
 		# Reset basic properties that exist
 		if player.get("health"):
-			player.health = player.max_health
+			player.health = player.get("max_health")
 		if player.get("ammo"):
-			player.ammo = player.max_ammo
+			player.ammo = player.get("max_ammo")
 		print("Player stats reset - Health: ", player.health, " Ammo: ", player.ammo)
 	
 	# Position player at center of generated level
@@ -168,13 +182,6 @@ func start_new_game():
 		var center_world_pos = Vector3(0, 3, 0)  # Center of map, elevated for safety
 		player.global_position = center_world_pos
 		print("Player positioned at level center: ", center_world_pos)
-	
-	# Adjust camera position for better view
-	if has_node("Camera3D"):
-		var camera = $Camera3D
-		camera.global_position = Vector3(0, 25, 15)
-		camera.look_at(Vector3(0, 0, 0), Vector3.UP)
-		camera.fov = 45.0
 
 func save_current_game():
 	"""Save the current game state"""
@@ -224,7 +231,12 @@ func regenerate_current_level():
 		# IMPORTANT: Clear death messages before regenerating
 		clear_ui_messages()
 		
+		# This will reset player state AND regenerate the level
 		level_manager.regenerate_level()
+		
+		# Make sure camera is positioned correctly after regeneration
+		await get_tree().create_timer(0.5).timeout  # Wait for level to generate
+		setup_camera()
 
 func get_current_enemies() -> Array:
 	"""Get all current enemies in the scene"""
