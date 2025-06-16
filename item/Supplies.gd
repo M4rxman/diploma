@@ -1,4 +1,4 @@
-# items/Supplies.gd - Complete unified supplies item
+# item/Supplies.gd - Complete unified supplies item
 extends RigidBody3D
 
 class_name Supplies
@@ -35,7 +35,7 @@ func setup_visual():
 	# Main crate body
 	var mesh_instance = MeshInstance3D.new()
 	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(1.0, 0.6, 1.0)
+	box_mesh.size = Vector3(0.5, 0.5, 0.5)
 	
 	# Create material - military green crate
 	var material = StandardMaterial3D.new()
@@ -53,17 +53,17 @@ func setup_visual():
 	# Add collision shape
 	var collision = CollisionShape3D.new()
 	var box_shape = BoxShape3D.new()
-	box_shape.size = Vector3(1.0, 0.6, 1.0)
+	box_shape.size = Vector3(0.5, 0.5, 0.5)
 	collision.shape = box_shape
 	collision.name = "MainCollision"
 	add_child(collision)
 	
-	# Add medical cross symbol (health indicator)
-	create_cross_symbol(Vector3(0, 0.35, 0.51), Vector3(0.3, 0.08, 0.02), Color.RED)
-	create_cross_symbol(Vector3(0, 0.35, 0.51), Vector3(0.08, 0.3, 0.02), Color.RED)
+	## Add medical cross symbol (health indicator)
+	#create_cross_symbol(Vector3(0, 0.35, 0.51), Vector3(0.3, 0.08, 0.02), Color.RED)
+	#create_cross_symbol(Vector3(0, 0.35, 0.51), Vector3(0.08, 0.3, 0.02), Color.RED)
 	
-	# Add ammo box symbol (ammo indicator)
-	create_ammo_symbol(Vector3(0, 0.35, -0.51))
+	## Add ammo box symbol (ammo indicator)
+	#create_ammo_symbol(Vector3(0, 0.35, -0.51))
 	
 	# Add corner reinforcements for crate look
 	create_corner_details()
@@ -168,8 +168,8 @@ func start_animations():
 	# Gentle bobbing motion
 	bob_tween = create_tween()
 	bob_tween.set_loops()
-	bob_tween.tween_property(self, "position:y", position.y + 0.4, 1.5)
-	bob_tween.tween_property(self, "position:y", position.y - 0.4, 1.5)
+	bob_tween.tween_property(self, "position:y", position.y + 0.1, 0.2)
+	bob_tween.tween_property(self, "position:y", position.y - 0.1, 0.1)
 	
 	# Gentle rotation for visibility
 	var rotation_tween = create_tween()

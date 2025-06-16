@@ -239,12 +239,16 @@ func _on_enemy_died(enemy):
 	if spawning_complete and remaining_enemies <= 0:
 		complete_current_wave()
 
+
 func complete_current_wave():
 	"""Complete current wave and start next one"""
 	wave_completed = true
 	timer.stop()
 	
 	print("Wave ", current_wave_number + 1, " completed!")
+	
+	# Spawn supplies crate as reward
+	_spawn_supplies()
 	
 	# Brief pause before next wave
 	await get_tree().create_timer(2.0).timeout
@@ -294,6 +298,22 @@ func is_position_clear(pos: Vector3) -> bool:
 	
 	var result = space_state.intersect_ray(query)
 	return not result.is_empty()  # Should hit ground
+
+func _spawn_supplies():
+	"""Spawn a supplies crate after wave completion"""
+	# Get a good spawn position
+	var spawn_pos = get_random_spawn_position()
+	spawn_pos.y += 2.0  # Spawn it a bit higher so it falls down
+	
+	# Create the supplies - load the Supplies class
+	var supplies = Supplies.new()
+	supplies.name = "WaveSupplies"
+	
+	# Add to scene
+	get_tree().current_scene.add_child(supplies)
+	supplies.global_position = spawn_pos
+	
+	print("Spawned supplies crate at: ", spawn_pos)
 
 # Getter methods
 func get_enemies_remaining() -> int:

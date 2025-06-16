@@ -22,7 +22,9 @@ points = PackedVector3Array(0.0328971, 0.0888088, 0.00329413, -0.0460961, -0.070
 
 [node name="MortarShell" type="RigidBody3D"]
 script = ExtResource("1_nqu5k")
-explosion_force = 30.0
+explosion_radius = 20.0
+explosion_force = 80.0
+launch_speed = 40.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("CapsuleMesh_cvwe3")

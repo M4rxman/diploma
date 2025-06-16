@@ -49,7 +49,7 @@ func _ready():
 	_connect_to_supplies()
 
 func _connect_to_supplies():
-	"""Connect to existing and future supplies in the scene"""
+	""""Connect to existing and future supplies in the scene"""
 	# Connect to existing supplies
 	var supplies_in_scene = get_tree().get_nodes_in_group("supplies")
 	for supplies in supplies_in_scene:

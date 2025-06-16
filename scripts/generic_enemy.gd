@@ -1,4 +1,4 @@
-# Enhanced generic_enemy.gd - Proper death signaling for wave system
+# scripts/generic_enemy.gd - Enhanced with visual effects
 extends RigidBody3D
 
 @onready var feet = $Feet
@@ -174,10 +174,36 @@ func _try_attack():
 			_show_attack_effect()
 
 func _show_attack_effect():
+	"""Visual effect when enemy attacks"""
 	var tween = create_tween()
 	var original_scale = scale
 	tween.tween_property(self, "scale", original_scale * 1.2, 0.1)
 	tween.tween_property(self, "scale", original_scale, 0.1)
+	
+	# Create slash effect
+	var slash = MeshInstance3D.new()
+	var slash_mesh = TorusMesh.new()
+	slash_mesh.inner_radius = 0.5
+	slash_mesh.outer_radius = 0.8
+	
+	var material = StandardMaterial3D.new()
+	material.albedo_color = Color(1, 0, 0, 0.7)
+	material.emission_enabled = true
+	material.emission = Color(1, 0, 0)
+	material.emission_energy = 2.0
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	slash_mesh.material = material
+	
+	slash.mesh = slash_mesh
+	add_child(slash)
+	slash.position = Vector3(0, 0.5, -0.5)
+	slash.rotation.x = deg_to_rad(90)
+	
+	# Animate the slash
+	var slash_tween = create_tween()
+	slash_tween.parallel().tween_property(slash, "scale", Vector3(1.5, 1.5, 1.5), 0.2)
+	slash_tween.parallel().tween_property(material, "albedo_color", Color(1, 0, 0, 0), 0.2)
+	slash_tween.tween_callback(slash.queue_free)
 
 func _check_if_stuck(delta: float):
 	var current_pos = global_position
@@ -209,23 +235,60 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	print("Enemy took ", amount, " damage. Health: ", health)
 	
-	# Visual feedback
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		var tween = create_tween()
-		tween.tween_method(_flash_red, 0.0, 1.0, 0.2)
+	# Visual damage feedback
+	_show_damage_effect()
 
 	if health <= 0:
 		die()
 
-func _flash_red(progress: float):
+func _show_damage_effect():
+	"""Visual effect when enemy takes damage"""
+	# Flash red
 	if has_node("MeshInstance3D"):
 		var mesh = $MeshInstance3D
 		if mesh.material_override:
-			var material = mesh.material_override as StandardMaterial3D
-			if material:
-				var flash_intensity = sin(progress * PI * 4) * 0.5 + 0.5
-				material.emission = Color.RED * flash_intensity
+			var original_material = mesh.material_override
+			var flash_material = original_material.duplicate()
+			mesh.material_override = flash_material
+			
+			var tween = create_tween()
+			tween.tween_property(flash_material, "albedo_color", Color.WHITE, 0.1)
+			tween.tween_property(flash_material, "albedo_color", Color.RED, 0.1)
+			tween.tween_callback(func(): mesh.material_override = original_material)
+	
+	# Create damage particles
+	var particles = GPUParticles3D.new()
+	add_child(particles)
+	particles.position = Vector3(0, 0.5, 0)
+	particles.emitting = true
+	particles.amount = 20
+	particles.lifetime = 0.5
+	particles.one_shot = true
+	
+	var process_mat = ParticleProcessMaterial.new()
+	process_mat.initial_velocity_min = 1.0
+	process_mat.initial_velocity_max = 3.0
+	process_mat.angular_velocity_min = -180.0
+	process_mat.angular_velocity_max = 180.0
+	process_mat.scale_min = 0.05
+	process_mat.scale_max = 0.15
+	process_mat.color = Color.RED
+	particles.process_material = process_mat
+	
+	var blood_mesh = SphereMesh.new()
+	blood_mesh.radial_segments = 4
+	blood_mesh.height = 0.1
+	blood_mesh.radius = 0.05
+	
+	var blood_material = StandardMaterial3D.new()
+	blood_material.albedo_color = Color(0.8, 0, 0)
+	blood_mesh.material = blood_material
+	
+	particles.draw_pass_1 = blood_mesh
+	
+	# Clean up particles
+	await get_tree().create_timer(1.0).timeout
+	particles.queue_free()
 
 func die() -> void:
 	if is_dying:
@@ -237,7 +300,10 @@ func die() -> void:
 	# CRITICAL: Emit death signal for wave management
 	died.emit()
 	
-	# Visual death effect
+	# Create death effect
+	_create_death_effect()
+	
+	# Visual death animation
 	var tween = create_tween()
 	tween.parallel().tween_property(self, "scale", Vector3.ZERO, 0.5)
 	tween.parallel().tween_property(self, "modulate", Color.TRANSPARENT, 0.5)
@@ -252,6 +318,61 @@ func die() -> void:
 	
 	# Queue free after animation
 	tween.tween_callback(queue_free)
+
+func _create_death_effect():
+	"""Create visual effect when enemy dies"""
+	# Create explosion particles
+	var explosion = GPUParticles3D.new()
+	get_parent().add_child(explosion)
+	explosion.global_position = global_position + Vector3(0, 0.5, 0)
+	explosion.emitting = true
+	explosion.amount = 50
+	explosion.lifetime = 1.0
+	explosion.one_shot = true
+	
+	var process_mat = ParticleProcessMaterial.new()
+	process_mat.initial_velocity_min = 3.0
+	process_mat.initial_velocity_max = 8.0
+	process_mat.angular_velocity_min = -360.0
+	process_mat.angular_velocity_max = 360.0
+	process_mat.scale_min = 0.1
+	process_mat.scale_max = 0.3
+	process_mat.gravity = Vector3(0, -10, 0)
+
+	# <-- Ось тут було помилково
+	var gradient := Gradient.new()
+	gradient.add_point(0.0, Color(1, 0, 0))
+	gradient.add_point(0.5, Color(0.8, 0, 0))
+	gradient.add_point(1.0, Color(0.3, 0, 0))
+	process_mat.color_ramp = gradient
+	
+	# Create mesh for particles
+	var chunk_mesh = BoxMesh.new()
+	chunk_mesh.size = Vector3(0.2, 0.2, 0.2)
+	
+	var chunk_material = StandardMaterial3D.new()
+	chunk_material.albedo_color = Color(0.6, 0, 0)
+	chunk_mesh.material = chunk_material
+	
+	explosion.draw_pass_1 = chunk_mesh
+	
+	# Create a light flash
+	var death_light = OmniLight3D.new()
+	death_light.light_color = Color(1, 0.5, 0)
+	death_light.light_energy = 5.0
+	death_light.omni_range = 8.0
+	get_parent().add_child(death_light)
+	death_light.global_position = global_position
+	
+	# Fade out light
+	var light_tween = create_tween()
+	light_tween.tween_property(death_light, "light_energy", 0.0, 0.5)
+	light_tween.tween_callback(death_light.queue_free)
+	
+	# Clean up explosion after some time
+	await get_tree().create_timer(2.0).timeout
+	if is_instance_valid(explosion):
+		explosion.queue_free()
 
 # AI control methods for testing
 func _set_ai_to_false() -> void:
