@@ -9,6 +9,7 @@ class_name DynamicLevelManager
 @export var obstacle_scene: PackedScene = preload("res://Level/LevelGenerator/Obstacle.tscn")
 @export var navmesh_template: NavigationMesh = preload("res://Level/LevelGenerator/navmesh_template.tres")
 @export var wave_scene: PackedScene = preload("res://Spawning/Wave.tscn")
+@export var supplies_scene: PackedScene = preload("res://item/Supplies.tscn")
 
 @export_group("Map Settings")
 @export_range(5, 21, 2) var map_width: int = 11

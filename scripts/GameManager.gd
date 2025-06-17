@@ -253,6 +253,7 @@ func get_targets() -> Array[Node]:
 # Wave management functions for spawner callbacks
 func _on_wave_update(wave_number: int):
 	"""Called when a new wave starts"""
+	
 	current_wave = wave_number
 	print("Wave ", wave_number + 1, " started!")
 	wave_changed.emit(wave_number)

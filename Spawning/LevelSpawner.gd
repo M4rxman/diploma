@@ -106,10 +106,10 @@ func initialize_waves():
 	# Create wave configurations with progressive difficulty
 	var wave_configs = [
 		{"enemies": 3, "health": 40.0, "damage": 15, "speed": 3.0, "spawn_delay": 2.0, "drop_supplies": true},
-		{"enemies": 5, "health": 55.0, "damage": 20, "speed": 3.5, "spawn_delay": 1.8, "drop_supplies": true},
-		{"enemies": 7, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5, "drop_supplies": true},
-		{"enemies": 10, "health": 85.0, "damage": 30, "speed": 4.5, "spawn_delay": 1.2, "drop_supplies": true},
-		{"enemies": 12, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0, "drop_supplies": true}
+		{"enemies": 2, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5, "drop_supplies": true},
+		{"enemies": 4, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0, "drop_supplies": false},
+		{"enemies": 5, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5, "drop_supplies": true},
+		{"enemies": 6, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0, "drop_supplies": false}
 	]
 	
 	# Convert configs to Wave objects
@@ -167,7 +167,7 @@ func start_next_wave():
 	enemies_remaining_to_spawn = current_wave.num_enemies
 	wave_completed = false
 	
-	print("🌊 Starting Wave ", current_wave_number + 1, "/", waves.size())
+	print("Starting Wave ", current_wave_number + 1, "/", waves.size())
 	print("   Enemies to spawn: ", current_wave.num_enemies)
 	
 	# Emit wave started signal
@@ -257,6 +257,14 @@ func _on_enemy_died(enemy):
 	if spawning_complete and remaining_enemies <= 0:
 		complete_current_wave()
 
+func spawn_item_drop(item_scene: PackedScene):
+	"""Spawn an item drop at enemy location or random position"""
+	if not item_scene:
+		# Default to supplies if no specific item
+		item_scene = supplies_scene
+	if item_scene:
+		drop_item.emit(item_scene)  # This will trigger GameManager's handler
+
 func spawn_supplies_near_player():
 	"""Spawn supplies near the player at ground level"""
 	print("Dropping supplies for the player!")
@@ -329,6 +337,7 @@ func complete_current_wave():
 	# Brief pause before next wave
 	await get_tree().create_timer(2.0).timeout
 	
+	spawn_wave_completion_supplies()
 	# Start next wave
 	start_next_wave()
 
@@ -373,6 +382,39 @@ func is_position_clear(pos: Vector3) -> bool:
 	
 	var result = space_state.intersect_ray(query)
 	return not result.is_empty()  # Should hit ground
+
+# Add this new function:
+func spawn_wave_completion_supplies():
+	"""Spawn supplies after wave completion"""
+	if not supplies_scene:
+		print("ERROR: No supplies scene assigned!")
+		return
+
+	# Get player position for reference
+	var player = get_tree().get_first_node_in_group("player")
+	if not player:
+		return
+
+	# Spawn 1-3 supply crates
+	var num_supplies = randi_range(1, 3)
+
+	for i in range(num_supplies):
+		var supplies = supplies_scene.instantiate()
+		get_tree().current_scene.add_child(supplies)
+
+		# Position near player but not too close
+		var spawn_offset = Vector3(
+		randf_range(-8, 8),
+		3.0,  # Drop from above
+		randf_range(-8, 8)
+		)
+
+		# Make sure it's not too close to player
+		if spawn_offset.length() < 4.0:
+			spawn_offset = spawn_offset.normalized() * 4.0
+		supplies.global_position = player.global_position + spawn_offset
+			
+		print("Spawned supplies at: ", supplies.global_position)
 
 # Getter methods
 func get_enemies_remaining() -> int:

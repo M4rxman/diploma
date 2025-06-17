@@ -83,7 +83,7 @@ func setup_ui_elements():
 	add_child(health_container)
 	
 	var health_icon = Label.new()
-	health_icon.text = "❤️"
+	health_icon.text = "HP"
 	health_icon.add_theme_font_size_override("font_size", 24)
 	health_container.add_child(health_icon)
 	
@@ -127,7 +127,7 @@ func setup_ui_elements():
 	add_child(ammo_container)
 	
 	var ammo_icon = Label.new()
-	ammo_icon.text = "🔫"
+	ammo_icon.text = "Ammo"
 	ammo_icon.add_theme_font_size_override("font_size", 20)
 	ammo_container.add_child(ammo_icon)
 	

@@ -14,7 +14,7 @@ extends RigidBody3D
 var health := 100
 var max_health := 100
 var ammo := 30
-var max_ammo := 30
+var max_ammo := 50
 var is_dead := false
 
 const TARGET_SPEED := 10.0

@@ -10,9 +10,9 @@ enum WeaponType {
 
 const WEAPON_STATS = {
 	WeaponType.SWORD: {
-		"damage": 100,
-		"range": 4.0,
-		"cooldown": 0.5,
+		"damage": 80,
+		"range": 2.0,
+		"cooldown": 1.0,
 		"knockback": 50.0,
 		"color": Color(0, 1, 0),
 		"name": "Sword"
@@ -26,7 +26,7 @@ const WEAPON_STATS = {
 		"name": "Pistol"
 	},
 	WeaponType.SHOTGUN: {
-		"damage": 30,
+		"damage": 60,
 		"range": 20.0,
 		"cooldown": 0.8,
 		"pellets": 5,
@@ -54,6 +54,7 @@ var current_weapon: WeaponType = WeaponType.PISTOL
 var can_fire: bool = true
 var owner_body: RigidBody3D
 var mesh_instance: MeshInstance3D 
+
 
 signal weapon_changed(weapon_type: WeaponType)
 signal weapon_fired
@@ -166,7 +167,6 @@ func _fire_sword():
 	if not sword_hitbox:
 		return
 	
-	# Check for wall blocking sword attack
 	var wall_check = _check_for_wall_in_front(WEAPON_STATS[WeaponType.SWORD]["range"])
 	if wall_check:
 		print("Sword blocked by wall")
@@ -174,21 +174,13 @@ func _fire_sword():
 	
 	print("Firing sword!")
 	sword_hitbox.monitoring = true
-	
-	var hit_body = sword_hitbox.body_entered.get_object()
-	print(hit_body)
-	if sword_hitbox.overlaps_body(hit_body): 
-		if hit_body.has_method("take_damage"):
-			hit_body.take_damage(WEAPON_STATS[WeaponType.PISTOL]["damage"])
-			print("Sword dealt ", WEAPON_STATS[WeaponType.PISTOL]["damage"], " damage to ", hit_body.name)
 
-	# Visual thrust effect
+	# Thrust effect
 	var tween = create_tween()
 	var thrust_direction = -owner_body.transform.basis.z * 0.3
 	tween.tween_property(owner_body, "position", owner_body.position + thrust_direction, 0.1)
 	tween.tween_property(owner_body, "position", owner_body.position, 0.1)
 	
-	# Create sword swing effect
 	_create_sword_swing_effect()
 	
 	await get_tree().create_timer(0.2).timeout
@@ -242,10 +234,10 @@ func _on_sword_hit(body):
 		print("Sword dealt ", WEAPON_STATS[WeaponType.SWORD]["damage"], " damage to ", body.name)
 		_create_hit_effect(body.global_position, Color.RED)
 	
-	# Apply knockback
 	if body is RigidBody3D:
 		var knockback_dir = (body.global_position - owner_body.global_position).normalized()
 		body.apply_central_impulse(knockback_dir * WEAPON_STATS[WeaponType.SWORD]["knockback"])
+
 
 func _fire_pistol():
 	if not hitscan_raycast:
@@ -287,49 +279,63 @@ func _fire_shotgun():
 	var stats = WEAPON_STATS[WeaponType.SHOTGUN]
 	var spread_angle = deg_to_rad(stats["spread"])
 	var pellet_count = stats["pellets"]
-	
+
 	print("Shotgun firing ", pellet_count, " pellets with ", stats["damage"], " damage each")
-	
-	# Show muzzle flash
-	_show_muzzle_flash(Color.ORANGE, true)  # Bigger flash for shotgun
-	
+
+	_show_muzzle_flash(Color.ORANGE, true)
+
 	for i in range(pellet_count):
-		var space_state = owner_body.get_world_3d().direct_space_state
 		var start_pos = owner_body.global_position + Vector3(0, 0.5, 0)
-		
-		# Calculate spread for each pellet
+
+		# Spread direction
 		var spread_x = randf_range(-spread_angle, spread_angle)
 		var spread_y = randf_range(-spread_angle, spread_angle)
-		
+
 		var forward = -owner_body.transform.basis.z
 		var right = owner_body.transform.basis.x
 		var up = owner_body.transform.basis.y
-		
-		var spread_direction = forward + right * sin(spread_x) + up * sin(spread_y)
-		spread_direction = spread_direction.normalized()
-		
-		var end_pos = start_pos + spread_direction * stats["range"]
-		
-		var query = PhysicsRayQueryParameters3D.create(start_pos, end_pos)
-		query.exclude = [owner_body]
-		query.collision_mask = 0xFFFFFFFF
-		
-		var result = space_state.intersect_ray(query)
-		
-		if result:
-			var hit_body = result["collider"]
-			print("Shotgun pellet ", i+1, " hit: ", hit_body.name)
-			
-			if hit_body.has_method("take_damage"):
-				hit_body.take_damage(stats["damage"])
-				print("Shotgun pellet dealt ", stats["damage"], " damage to ", hit_body.name)
-				
-				# Small knockback per pellet
-				if hit_body is RigidBody3D:
-					var knockback_dir = (hit_body.global_position - owner_body.global_position).normalized()
-					hit_body.apply_central_impulse(knockback_dir * stats["knockback"])
-			
-			_create_hit_effect(result["position"], Color.ORANGE, 0.5)
+
+		var spread_direction = (forward + right * sin(spread_x) + up * sin(spread_y)).normalized()
+		var current_start = start_pos
+		var max_range = stats["range"]
+		var remaining_distance = max_range
+		var already_hit: Array = []
+
+		while remaining_distance > 0:
+			var end_pos = current_start + spread_direction * remaining_distance
+
+			var query = PhysicsRayQueryParameters3D.create(current_start, end_pos)
+			query.exclude = [owner_body] + already_hit
+			query.collision_mask = 0xFFFFFFFF
+
+			var result = owner_body.get_world_3d().direct_space_state.intersect_ray(query)
+
+			if result.is_empty():
+				break  # No more hits along this path
+
+			var hit_position = result.position
+			var hit_body = result.collider
+
+			if is_instance_valid(hit_body):
+				if already_hit.has(hit_body):
+					break  # Already hit this target, stop
+				already_hit.append(hit_body)
+
+				if hit_body.has_method("take_damage"):
+					hit_body.take_damage(stats["damage"])
+					print("Shotgun pellet pierced: ", hit_body.name)
+
+					if hit_body is RigidBody3D:
+						var knockback_dir = (hit_body.global_position - owner_body.global_position).normalized()
+						hit_body.apply_central_impulse(knockback_dir * stats["knockback"])
+
+					_create_hit_effect(hit_position, Color.ORANGE, 0.5)
+
+			# Move start point forward to continue pierce
+			var distance_to_hit = current_start.distance_to(hit_position)
+			remaining_distance -= distance_to_hit
+			current_start = hit_position + spread_direction * 0.1  # Slight offset to avoid self-collision
+
 
 func _fire_mortar():
 	print("Firing mortar!")

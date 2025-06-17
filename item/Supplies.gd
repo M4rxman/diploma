@@ -1,4 +1,4 @@
-# item/Supplies.gd - Fixed supplies with automatic pickup and simple box shape
+# item/Supplies.gd 
 extends RigidBody3D
 
 class_name Supplies
@@ -31,34 +31,6 @@ func _ready():
 	timer.start()
 
 func setup_visual():
-	"""Create a simple rotating box visual"""
-	# Main supply box
-	var mesh_instance = MeshInstance3D.new()
-	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(0.8, 0.8, 0.8)  # Smaller box
-	
-	# Create material - bright green supply box
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.2, 0.8, 0.2)  # Bright green
-	material.emission = Color(0.1, 0.4, 0.1) * 0.5
-	material.emission_energy = 0.6
-	material.metallic = 0.2
-	material.roughness = 0.6
-	
-	box_mesh.material = material
-	mesh_instance.mesh = box_mesh
-	mesh_instance.name = "MainMesh"
-	add_child(mesh_instance)
-	
-	# Add collision shape
-	var collision = CollisionShape3D.new()
-	var box_shape = BoxShape3D.new()
-	box_shape.size = Vector3(0.8, 0.8, 0.8)
-	collision.shape = box_shape
-	collision.name = "MainCollision"
-	add_child(collision)
-	
-	# Add a simple glowing outline effect
 	create_glow_effect()
 
 func create_glow_effect():
@@ -248,8 +220,3 @@ static func create_supplies_at(position: Vector3, parent: Node) -> Supplies:
 	
 	print("Supplies created at: ", spawn_pos)
 	return supplies
-
-# Interaction method for compatibility (now automatic)
-func interact():
-	"""Legacy interaction method - now handled automatically"""
-	pickup()

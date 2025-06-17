@@ -27,13 +27,15 @@ rings = 1
 points = PackedVector3Array(-0.0268873, -0.487145, -0.0151637, 0.00348619, 0.030316, 0.485435, 0.018437, 0.0599001, 0.464554, -0.422107, 0.0303772, -0.243208, 0.427589, 0.015088, -0.242262, -0.0268873, 0.487145, -0.0151637, -0.422107, 0.0303772, 0.243208, 0.00348619, 0.030316, -0.485436, 0.427589, -0.015088, 0.242262, -0.0116461, -0.348844, 0.348844, 0.304673, -0.346306, -0.180702, -0.300111, -0.349173, -0.182148, 0.304673, 0.346306, 0.180702, -0.300111, 0.349173, 0.182148, -0.0116461, 0.348844, -0.348844, 0.304673, 0.346306, -0.180702, -0.300111, -0.349173, 0.182148, 0.304673, -0.346306, 0.180702, -0.0116461, -0.348845, -0.348845, -0.300111, 0.349173, -0.182148, -0.0116461, 0.348845, 0.348845, -0.422107, -0.0303772, 0.243208, 0.00348619, -0.030316, 0.485436, -0.422107, -0.0303772, -0.243208, 0.00348619, -0.105943, -0.454124, 0.0185473, 0.483114, 0.0300764, 0.0185461, -0.483076, 0.0301686, 0.427589, -0.015088, -0.242262, 0.427589, 0.015088, 0.242262, 0.0940588, -0.452543, -0.0603138, 0.0940417, 0.452552, -0.0603024, -0.0263555, -0.0148982, -0.478615)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ihhl1"]
-size = Vector3(1, 0.1, 2)
+size = Vector3(1, 0.1, 1.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_acccu"]
-size = Vector3(1, 0.1, 2)
+size = Vector3(1, 0.1, 1.2)
 
 [node name="Character" type="RigidBody3D"]
 top_level = true
+collision_layer = 3
+collision_mask = 3
 axis_lock_angular_y = true
 mass = 2.5
 physics_material_override = SubResource("PhysicsMaterial_nt8qm")
@@ -70,10 +72,10 @@ mortar_shell_scene = ExtResource("2_l3lwv")
 
 [node name="SwordHitbox" type="Area3D" parent="WeaponManager"]
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, -0.5)
-collision_mask = 3
+collision_mask = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="WeaponManager/SwordHitbox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.6)
 shape = SubResource("BoxShape3D_ihhl1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="WeaponManager/SwordHitbox/CollisionShape3D"]
