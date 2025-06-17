@@ -1,132 +1,213 @@
+# scripts/mortar_shell.gd - Improved targeting and physics
 class_name Mortar_Shell
 extends RigidBody3D
 
-@export var explosion_radius: float = 5.0
-@export var explosion_damage: float = 50.0
-@export var explosion_force: float = 1000.0
+@export var explosion_radius: float = 10.0
+@export var explosion_damage: float = 200.0
+@export var explosion_force: float = 500.0
+@export var fuse_time: float = 4.0  # Increased fuse time
+@export var launch_speed: float = 30.0
 
-# Preload explosion effect scene (create this separately)
-# @export var explosion_effect_scene: PackedScene
-
-var initial_velocity: Vector3
 var armed: bool = false
-var arm_time: float = 0.1  # Time before shell can explode
+var arm_delay: float = 0.3
+var target_position: Vector3
+var has_launched: bool = false
 
 func _ready():
-	# Set up the rigidbody for projectile behavior
+	# Physics setup
 	gravity_scale = 1.0
-	continuous_cd = true  # Important for fast projectiles
+	continuous_cd = true
 	contact_monitor = true
-	max_contacts_reported = 10
+	max_contacts_reported = 5
 	
-	# Connect collision signal
+	# Connect signals
 	body_entered.connect(_on_body_entered)
 	
-	# Arm the shell after a short delay
-	await get_tree().create_timer(arm_time).timeout
+	print("Mortar shell created")
+	
+	# Arm after delay
+	await get_tree().create_timer(arm_delay).timeout
 	armed = true
+	print("Mortar shell armed")
 	
-	# Optional: Destroy after timeout if it doesn't hit anything
-	await get_tree().create_timer(10.0).timeout
-	queue_free()
-
-func launch(direction: Vector3, force: float):
-	"""Launch the mortar shell in a given direction with specified force"""
-	# Apply initial impulse
-	initial_velocity = direction.normalized() * force
-	apply_central_impulse(initial_velocity)
-	
-	# Orient the shell to face its velocity direction
-	if direction.length() > 0:
-		look_at(global_position + direction, Vector3.UP)
-	
-	# Optional: Apply some spin for realism
-	apply_torque_impulse(Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 10.0)
-
-func calculate_launch_velocity(target_position: Vector3, launch_angle: float = 45.0) -> Vector3:
-	"""Calculate launch velocity needed to hit target position at given angle"""
-	var start_pos = global_position
-	var displacement = target_position - start_pos
-	var horizontal_distance = Vector2(displacement.x, displacement.z).length()
-	var vertical_distance = displacement.y
-	
-	# Physics calculation for projectile motion
-	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
-	var angle_rad = deg_to_rad(launch_angle)
-	
-	# Calculate initial velocity needed
-	var velocity = sqrt((gravity * horizontal_distance * horizontal_distance) / 
-		(2.0 * cos(angle_rad) * cos(angle_rad) * 
-		(horizontal_distance * tan(angle_rad) - vertical_distance)))
-	
-	# Calculate launch direction
-	var horizontal_dir = Vector3(displacement.x, 0, displacement.z).normalized()
-	var launch_dir = (horizontal_dir * cos(angle_rad) + Vector3.UP * sin(angle_rad)).normalized()
-	
-	return launch_dir * velocity
-
-func _on_body_entered(body):
-	if armed and body != self:
+	# Auto-explode after fuse time
+	await get_tree().create_timer(fuse_time).timeout
+	if is_inside_tree():
+		print("Mortar shell fuse expired, exploding")
 		explode()
 
+func launch_at_target(target_pos: Vector3, force: float = 25.0):
+	"""Launch mortar shell at target position using ballistic trajectory"""
+	target_position = target_pos
+	has_launched = true
+	
+	print("Launching mortar at target: ", target_pos, " from: ", global_position)
+	
+	# Calculate ballistic trajectory
+	var to_target = target_pos - global_position
+	var horizontal_distance = Vector2(to_target.x, to_target.z).length()
+	var height_diff = to_target.y
+	
+	# Use 45-degree launch angle for good arc
+	var launch_angle = deg_to_rad(45.0)
+	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	
+	print("Horizontal distance: ", horizontal_distance, " Height diff: ", height_diff)
+	
+	# Calculate required velocity for ballistic trajectory
+	var velocity_magnitude = sqrt((gravity * horizontal_distance) / sin(2 * launch_angle))
+	
+	# Adjust for height difference
+	if height_diff != 0:
+		velocity_magnitude *= 1.1  # Slight boost for height differences
+	
+	# Calculate launch direction
+	var horizontal_direction = Vector3(to_target.x, 0, to_target.z).normalized()
+	var launch_direction = horizontal_direction * cos(launch_angle) + Vector3.UP * sin(launch_angle)
+	
+	# Apply launch velocity
+	linear_velocity = launch_direction * velocity_magnitude
+	
+	# Add some spin for visual effect
+	angular_velocity = Vector3(randf_range(-3, 3), randf_range(-2, 2), randf_range(-3, 3))
+	
+	print("Launch velocity: ", linear_velocity, " (magnitude: ", velocity_magnitude, ")")
+
+func launch(direction: Vector3, force: float):
+	"""Legacy launch method for compatibility"""
+	has_launched = true
+	linear_velocity = direction * force
+	angular_velocity = Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5))
+	print("Mortar launched with legacy method - Velocity: ", linear_velocity)
+
+func _on_body_entered(body):
+	"""Handle collision with other bodies"""
+	if not armed or not has_launched:
+		return
+		
+	if body == self:
+		return
+	
+	# Don't explode on the player who fired it immediately
+	if body.is_in_group("player"):
+		# Only explode if shell has been flying for a bit
+		if get_physics_process_delta_time() * Engine.get_process_frames() < 1.0:
+			return
+		
+	print("Mortar shell hit: ", body.name, " - exploding")
+	explode()
+
 func explode():
-	"""Handle explosion logic"""
-	# Get all bodies in explosion radius
+	"""Handle explosion"""
+	if not is_inside_tree():
+		return
+		
+	print("Mortar shell exploding at: ", global_position)
+	
+	# Find all bodies within explosion radius
+	var explosion_pos = global_position
 	var space_state = get_world_3d().direct_space_state
+	
+	# Use area query to find nearby objects
 	var query = PhysicsShapeQueryParameters3D.new()
-	query.shape = SphereShape3D.new()
-	query.shape.radius = explosion_radius
-	query.transform = Transform3D(Basis(), global_position)
+	var sphere = SphereShape3D.new()
+	sphere.radius = explosion_radius
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), explosion_pos)
+	query.collision_mask = 0xFFFFFFFF  # Check all layers
 	
 	var results = space_state.intersect_shape(query)
 	
-	# Apply damage and force to nearby objects
+	print("Explosion found ", results.size(), " potential targets")
+	
+	# Apply damage and force to all found objects
 	for result in results:
 		var body = result["collider"]
-		if body.has_method("take_damage"):
-			# Calculate damage falloff based on distance
-			var distance = global_position.distance_to(body.global_position)
-			var damage_multiplier = 1.0 - (distance / explosion_radius)
-			damage_multiplier = clamp(damage_multiplier, 0.0, 1.0)
-			body.take_damage(explosion_damage * damage_multiplier)
+		if body == self:
+			continue
+			
+		var distance = explosion_pos.distance_to(body.global_position)
+		var damage_multiplier = 1.0 - (distance / explosion_radius)
+		damage_multiplier = clamp(damage_multiplier, 0.0, 1.0)
 		
-		# Apply explosion force to RigidBody3D objects
+		# Apply damage
+		if body.has_method("take_damage"):
+			var damage = explosion_damage * damage_multiplier
+			body.take_damage(int(damage))
+			print("Explosion damaged ", body.name, " for ", damage, " damage (multiplier: ", damage_multiplier, ")")
+		
+		# Apply explosion force
 		if body is RigidBody3D:
-			var force_direction = (body.global_position - global_position).normalized()
-			var force_distance = global_position.distance_to(body.global_position)
-			var force_multiplier = 1.0 - (force_distance / explosion_radius)
-			force_multiplier = clamp(force_multiplier, 0.0, 0.5)
-			body.apply_central_impulse(force_direction * explosion_force * force_multiplier)
+			var force_direction = (body.global_position - explosion_pos).normalized()
+			if force_direction.length() == 0:
+				force_direction = Vector3.UP  # If exactly on top, push upward
+			var force_magnitude = explosion_force * damage_multiplier
+			body.apply_central_impulse(force_direction * force_magnitude)
+			print("Applied explosion force to ", body.name, ": ", force_direction * force_magnitude)
 	
-	# Spawn explosion effect
-	# if explosion_effect_scene:
-	#     var explosion = explosion_effect_scene.instantiate()
-	#     get_tree().current_scene.add_child(explosion)
-	#     explosion.global_position = global_position
-	
-	# Camera shake (if you have a camera shake system)
-	# CameraShake.shake(0.5, 10.0)
-	
-	# Play explosion sound
-	# AudioManager.play_3d_sound("explosion", global_position)
+	# Create visual explosion effect
+	_create_explosion_effect()
 	
 	# Remove the shell
 	queue_free()
 
-# Optional: Visual debug for trajectory
-func _draw_trajectory_preview(launch_velocity: Vector3, steps: int = 30):
-	"""Draw predicted trajectory (for debugging/aiming)"""
-	var points = []
-	var pos = global_position
-	var vel = launch_velocity
-	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8) * Vector3.DOWN
-	var time_step = 0.1
+func _create_explosion_effect():
+	"""Create simple explosion visual effect"""
+	print("BOOM! Explosion at: ", global_position)
 	
-	for i in range(steps):
-		points.append(pos)
-		vel += gravity * time_step
-		pos += vel * time_step
-	
-	# You would need to implement actual line drawing
-	# This is just to show the calculation
-	return points
+	# Create particles instead of persistent light
+	for i in range(8):
+		var particle = RigidBody3D.new()
+		var mesh_instance = MeshInstance3D.new()
+		var sphere_mesh = SphereMesh.new()
+		sphere_mesh.radius = 0.1
+		sphere_mesh.height = 0.2
+		
+		# Random explosion colors
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(
+			randf_range(0.8, 1.0),  # Red
+			randf_range(0.3, 0.8),  # Green  
+			randf_range(0.0, 0.3)   # Blue
+		)
+		material.emission = material.albedo_color * 2.0
+		sphere_mesh.material = material
+		
+		mesh_instance.mesh = sphere_mesh
+		particle.add_child(mesh_instance)
+		
+		# Add collision
+		var collision = CollisionShape3D.new()
+		var sphere_shape = SphereShape3D.new()
+		sphere_shape.radius = 0.1
+		collision.shape = sphere_shape
+		particle.add_child(collision)
+		
+		# Add to scene
+		get_tree().current_scene.add_child(particle)
+		particle.global_position = global_position
+		
+		# Random explosion velocity
+		var explosion_velocity = Vector3(
+			randf_range(-10, 10),
+			randf_range(5, 15),
+			randf_range(-10, 10)
+		)
+		particle.linear_velocity = explosion_velocity
+		
+		# Auto-cleanup particles
+		var cleanup_timer = Timer.new()
+		cleanup_timer.wait_time = 2.0
+		cleanup_timer.one_shot = true
+		cleanup_timer.timeout.connect(func(): 
+			if is_instance_valid(particle): 
+				particle.queue_free()
+		)
+		particle.add_child(cleanup_timer)
+		cleanup_timer.start()
+
+func _physics_process(delta):
+	"""Debug trajectory"""
+	if has_launched and is_inside_tree():
+		# Optional: Add trail effect or debug info
+		pass

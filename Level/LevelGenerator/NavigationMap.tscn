@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cniwd86l0iqvc"]
+
+[ext_resource type="Script" path="res://Level/LevelGenerator/NavigationMap.gd" id="1"]
+
+[node name="Navigation" type="Node3D"]
+script = ExtResource("1")

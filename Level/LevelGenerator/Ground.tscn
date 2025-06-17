@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://bxfgkr36mwh4j"]
+
+[ext_resource type="Material" uid="uid://cosj8xo1p3odg" path="res://Level/LevelGrid.tres" id="1"]
+
+[node name="Ground" type="CSGBox3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+use_collision = true
+collision_layer = 9
+size = Vector3(10, 1, 10)
+material = ExtResource("1")

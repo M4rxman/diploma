@@ -1,0 +1,137 @@
+[gd_scene load_steps=6 format=3 uid="uid://dty52pe7f10i4"]
+
+[ext_resource type="PackedScene" uid="uid://dvwlsbgt1h8cs" path="res://Level/LevelGenerator/Obstacle.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://bxfgkr36mwh4j" path="res://Level/LevelGenerator/Ground.tscn" id="3"]
+[ext_resource type="Script" path="res://Level/LevelGenerator/NavigationMap.gd" id="5"]
+[ext_resource type="PackedScene" uid="uid://bkoshylrfy1x8" path="res://Spawning/Wave.tscn" id="6"]
+
+[sub_resource type="NavigationMesh" id="1"]
+vertices = PackedVector3Array(-6.1, 0.4, -3.3, -5.8, 0.4, -3.6, -5.8, 0.4, -5.4, -5.8, 0.4, -5.4, -3.7, 0.4, -5.7, -3.7, 0.4, -6.3, -5.8, 0.4, -6.6, -10.6, 0.4, -6.3, -12.4, 0.4, -6.3, -11.8, 0.4, -5.4, -8.5, 0.4, -5.7, -8.5, 0.4, -5.7, -8.2, 0.4, -3.6, -6.1, 0.4, -3.3, -5.8, 0.4, -5.4, -5.8, 0.4, -6.6, -8.5, 0.4, -5.7, -5.8, 0.4, -6.6, -5.8, 0.4, -8.4, -10.3, 0.4, -8.4, -10.6, 0.4, -6.3, -11.8, 0.4, -2.4, -11.8, 0.4, -5.4, -12.4, 0.4, -6.3, -12.4, 0.4, 4.2, -12.4, 0.4, 4.2, -10.3, 0.4, 4.5, -9.4, 0.4, 3.9, -9.7, 0.4, -2.1, -11.8, 0.4, -2.4, 11.6, 0.4, 6.3, 11.9, 0.4, 8.4, 12.5, 0.4, 8.4, 12.5, 0.4, -0.299999, 10.4, 0.4, -7.5, 12.5, 0.4, -7.8, 12.5, 0.4, -8.4, 5, 0.4, -8.4, 4.7, 0.4, -7.8, 7.7, 0.4, -7.5, -2.2, 0.4, -8.4, -2.2, 0.4, -7.8, -0.0999994, 0.4, -7.5, 4.7, 0.4, -7.8, 5, 0.4, -8.4, 8.3, 0.4, -5.4, 10.4, 0.4, -5.7, 10.4, 0.4, -7.5, 7.7, 0.4, -7.5, 10.7, 0.4, -0.299999, 10.4, 0.4, -2.1, 8.3, 0.4, -2.4, 5.9, 0.4, -0.599999, 7.4, 0.4, 2.4, 5.9, 0.4, -0.599999, 4.1, 0.4, -0.299999, 4.4, 0.4, 2.7, 7.4, 0.4, 2.4, 8.3, 0.4, -5.4, 7.7, 0.4, -7.5, 7.7, 0.4, -4.5, 8.3, 0.4, -2.4, 7.7, 0.4, 5.1, 8.9, 0.4, 6.3, 11.6, 0.4, 6.3, 12.5, 0.4, -0.299999, 10.7, 0.4, -0.299999, 7.4, 0.4, 2.4, 7.7, 0.4, -4.5, 5.9, 0.4, -4.2, 5.9, 0.4, -0.599999, 8.3, 0.4, -2.4, -0.0999994, 0.4, -7.5, -0.0999994, 0.4, -5.7, 4.4, 0.4, -5.7, 4.7, 0.4, -7.8, 9.5, 1.8, -4.5, 9.5, 1.8, -3.6, 11.3, 1.8, -3.6, 11.3, 1.8, -4.5, 11.3, 1.8, -4.5, 11.3, 1.8, -3.6, 11.6, 1.6, -1.5, 12.5, 1.6, -1.5, 12.5, 2.4, -6.6, 11.6, 2.4, -6.6, 11.45, 2.4, -5.55, 12.5, 1.6, -3.2, 12.5, 2.4, -4.9, -2.2, 0.4, 1.5, -3.1, 0.4, 1.8, -2.8, 0.4, 2.4, -5.5, 0.4, -2.1, -5.8, 0.4, -3.6, -6.1, 0.4, -3.3, -5.8, 0.4, -1.5, 8.3, 0.4, 6.6, 8.9, 0.4, 6.3, 7.7, 0.4, 5.1, 7.4, 0.4, 5.7, 2.3, 0.4, -0.599999, -2.2, 0.4, 1.5, -2.8, 0.4, 2.4, 3.5, 0.4, 2.4, 4.1, 0.4, -0.299999, -1.3, 0.4, -2.1, -1.6, 0.4, -4.2, -2.2, 0.4, -4.2, -2.5, 0.4, -2.1, -2.5, 0.4, -1.8, -5.5, 0.4, -2.1, -5.8, 0.4, -1.5, -2.5, 0.4, -1.8, -2.5, 0.4, -2.1, 8.3, 0.4, 8.4, 8.3, 0.4, 6.6, 7.4, 0.4, 5.7, 5.6, 0.4, 6.3, 5.9, 0.4, 8.4, 3.5, 0.4, 2.4, 3.8, 0.4, 6.3, 4.7, 0.4, 5.7, 4.4, 0.4, 2.7, 3.5, 0.4, 2.4, 4.4, 0.4, 2.7, 4.1, 0.4, -0.299999, 5.6, 0.4, 6.3, 7.4, 0.4, 5.7, 4.7, 0.4, 5.7, 3.8, 0.4, 6.3, -1.3, 0.4, -2.1, -2.5, 0.4, -1.8, -2.2, 0.4, 1.5, 2.3, 0.4, -0.599999, 2.3, 0.4, -2.1, -6.1, 0.4, 1.8, -5.8, 0.4, 1.5, -5.8, 0.4, -1.5, -6.1, 0.4, -3.3, -3.7, 0.4, 2.7, -2.8, 0.4, 2.4, -3.1, 0.4, 1.8, -5.8, 0.4, 1.5, -6.1, 0.4, 1.8, -6.1, 0.4, 3.3, -3.7, 0.4, 5.4, -3.7, 0.4, 2.7, -6.1, 0.4, 3.3, -6.7, 0.4, 3.9, -5.5, 0.4, 6.3, -10.3, 0.4, 7.5, -12.4, 0.4, 7.8, -12.4, 0.4, 8.4, -5.8, 0.4, 8.4, 2.3, 0.4, 8.4, 2.3, 0.4, 7.8, 0.200001, 0.4, 7.5, -0.0999994, 0.4, 8.4, -6.7, 0.4, 3.9, -9.4, 0.4, 3.9, -10.3, 0.4, 4.5, -10.3, 0.4, 7.5, -5.8, 0.4, 8.4, -5.5, 0.4, 6.3, -0.4, 0.4, 6.3, -0.0999994, 0.4, 8.4, 0.200001, 0.4, 7.5, 0.200001, 0.4, 5.7, -0.4, 0.4, 6.3, 0.200001, 0.4, 5.7, -3.7, 0.4, 5.4, -5.5, 0.4, 6.3, 1.1, 2.2, 4.5, 1.4, 1.8, 6.6, 2.6, 1.8, 6.6, 2.6, 2.2, 3.6, -2.5, 2, 3.6, -2.5, 2, 4.5, 1.1, 2.2, 4.5, 2.6, 2.2, 3.6, -0.0999994, 1.6, 4.5)
+polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(4, 3, 5), PackedInt32Array(5, 3, 6), PackedInt32Array(8, 7, 9), PackedInt32Array(9, 7, 10), PackedInt32Array(14, 13, 15), PackedInt32Array(15, 13, 12), PackedInt32Array(15, 12, 11), PackedInt32Array(20, 19, 16), PackedInt32Array(16, 19, 17), PackedInt32Array(17, 19, 18), PackedInt32Array(22, 21, 23), PackedInt32Array(23, 21, 24), PackedInt32Array(26, 25, 27), PackedInt32Array(27, 25, 28), PackedInt32Array(28, 25, 29), PackedInt32Array(31, 30, 32), PackedInt32Array(32, 30, 33), PackedInt32Array(35, 34, 36), PackedInt32Array(36, 34, 39), PackedInt32Array(36, 39, 37), PackedInt32Array(37, 39, 38), PackedInt32Array(41, 40, 42), PackedInt32Array(42, 40, 43), PackedInt32Array(43, 40, 44), PackedInt32Array(46, 45, 47), PackedInt32Array(47, 45, 48), PackedInt32Array(50, 49, 51), PackedInt32Array(51, 49, 52), PackedInt32Array(52, 49, 53), PackedInt32Array(55, 54, 56), PackedInt32Array(56, 54, 57), PackedInt32Array(61, 60, 58), PackedInt32Array(58, 60, 59), PackedInt32Array(63, 62, 64), PackedInt32Array(64, 62, 67), PackedInt32Array(64, 67, 66), PackedInt32Array(64, 66, 65), PackedInt32Array(68, 71, 69), PackedInt32Array(69, 71, 70), PackedInt32Array(73, 72, 74), PackedInt32Array(74, 72, 75), PackedInt32Array(79, 78, 76), PackedInt32Array(76, 78, 77), PackedInt32Array(85, 84, 86), PackedInt32Array(86, 84, 88), PackedInt32Array(86, 88, 80), PackedInt32Array(80, 88, 81), PackedInt32Array(81, 88, 87), PackedInt32Array(81, 87, 82), PackedInt32Array(82, 87, 83), PackedInt32Array(91, 90, 89), PackedInt32Array(93, 92, 94), PackedInt32Array(94, 92, 95), PackedInt32Array(99, 98, 96), PackedInt32Array(96, 98, 97), PackedInt32Array(104, 103, 100), PackedInt32Array(100, 103, 101), PackedInt32Array(101, 103, 102), PackedInt32Array(109, 108, 105), PackedInt32Array(105, 108, 107), PackedInt32Array(105, 107, 106), PackedInt32Array(113, 112, 110), PackedInt32Array(110, 112, 111), PackedInt32Array(116, 115, 117), PackedInt32Array(117, 115, 118), PackedInt32Array(118, 115, 114), PackedInt32Array(122, 121, 119), PackedInt32Array(119, 121, 120), PackedInt32Array(125, 124, 123), PackedInt32Array(129, 128, 126), PackedInt32Array(126, 128, 127), PackedInt32Array(131, 130, 132), PackedInt32Array(132, 130, 133), PackedInt32Array(133, 130, 134), PackedInt32Array(136, 135, 137), PackedInt32Array(137, 135, 138), PackedInt32Array(140, 139, 141), PackedInt32Array(141, 139, 142), PackedInt32Array(142, 139, 143), PackedInt32Array(143, 139, 144), PackedInt32Array(147, 146, 148), PackedInt32Array(148, 146, 145), PackedInt32Array(148, 145, 149), PackedInt32Array(151, 150, 152), PackedInt32Array(152, 150, 153), PackedInt32Array(155, 154, 156), PackedInt32Array(156, 154, 157), PackedInt32Array(159, 158, 160), PackedInt32Array(160, 158, 163), PackedInt32Array(160, 163, 161), PackedInt32Array(161, 163, 162), PackedInt32Array(167, 166, 164), PackedInt32Array(164, 166, 165), PackedInt32Array(169, 168, 170), PackedInt32Array(170, 168, 171), PackedInt32Array(173, 172, 174), PackedInt32Array(174, 172, 175), PackedInt32Array(178, 180, 179), PackedInt32Array(179, 180, 177), PackedInt32Array(179, 177, 176)]
+
+[node name="Navigation" type="Node3D"]
+script = ExtResource("5")
+
+[node name="NavigationMeshInstance" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("1")
+
+[node name="Ground" parent="NavigationMeshInstance" instance=ExtResource("3")]
+size = Vector3(26, 1, 18)
+
+[node name="CSGBox" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.957875, 4)
+size = Vector3(1, 1.91575, 1)
+
+[node name="CSGBox2" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.52049, 8)
+size = Vector3(1, 1.04098, 1)
+
+[node name="CSGBox3" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.625946, -4)
+size = Vector3(1, 1.25189, 1)
+
+[node name="CSGBox4" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.06059, -6)
+size = Vector3(1, 2.12118, 1)
+
+[node name="CSGBox5" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.677128, -4)
+size = Vector3(1, 1.35426, 1)
+
+[node name="CSGBox6" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.79679, 6)
+size = Vector3(1, 1.59358, 1)
+
+[node name="CSGBox7" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.759819, -4)
+size = Vector3(1, 1.51964, 1)
+
+[node name="CSGBox8" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.714051, 0)
+size = Vector3(1, 1.4281, 1)
+
+[node name="CSGBox9" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.60288, -4)
+size = Vector3(1, 1.20576, 1)
+
+[node name="CSGBox10" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.02148, 2)
+size = Vector3(1, 2.04295, 1)
+
+[node name="CSGBox11" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.22058, 8)
+size = Vector3(1, 2.44115, 1)
+
+[node name="CSGBox12" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.629326, -2)
+size = Vector3(1, 1.25865, 1)
+
+[node name="CSGBox13" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.528031, -8)
+size = Vector3(1, 1.05606, 1)
+
+[node name="CSGBox14" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.14281, 8)
+size = Vector3(1, 2.28562, 1)
+
+[node name="CSGBox15" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.760486, -4)
+size = Vector3(1, 1.52097, 1)
+
+[node name="CSGBox16" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.20378, -8)
+size = Vector3(1, 2.40756, 1)
+
+[node name="CSGBox17" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.613288, -2)
+size = Vector3(1, 1.22658, 1)
+
+[node name="CSGBox18" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.615969, -4)
+size = Vector3(1, 1.23194, 1)
+
+[node name="CSGBox19" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.818335, 4)
+size = Vector3(1, 1.63667, 1)
+
+[node name="CSGBox20" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.627546, 4)
+size = Vector3(1, 1.25509, 1)
+
+[node name="CSGBox21" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.22885, -2)
+size = Vector3(1, 2.45769, 1)
+
+[node name="CSGBox22" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.914057, -4)
+size = Vector3(1, 1.82811, 1)
+
+[node name="CSGBox23" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.19977, 6)
+size = Vector3(1, 2.39954, 1)
+
+[node name="CSGBox24" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.965754, 4)
+size = Vector3(1, 1.93151, 1)
+
+[node name="CSGBox25" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.599594, 0)
+size = Vector3(1, 1.19919, 1)
+
+[node name="CSGBox26" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1.20549, -6)
+size = Vector3(1, 2.41098, 1)
+
+[node name="CSGBox27" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1.13403, -6)
+size = Vector3(1, 2.26807, 1)
+
+[node name="CSGBox28" parent="NavigationMeshInstance" instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.515055, 8)
+size = Vector3(1, 1.03011, 1)
+
+[node name="Waves" type="Node" parent="."]
+
+[node name="Wave" parent="Waves" instance=ExtResource("6")]
+num_enemies = 50
+second_between_spawns = 0.5
