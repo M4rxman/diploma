@@ -1,4 +1,4 @@
-# player/character.gd - Updated with proper ammo consumption and visual effects
+# player/character.gd - Fixed character with supply system compatibility
 extends RigidBody3D
 
 @onready var feet = $Feet  
@@ -14,7 +14,7 @@ extends RigidBody3D
 var health := 100
 var max_health := 100
 var ammo := 30
-var max_ammo := 50  # Increased max ammo
+var max_ammo := 30
 var is_dead := false
 
 const TARGET_SPEED := 10.0
@@ -24,14 +24,6 @@ const TARGET_GRAVITY := 200.0
 var dodge_ready = true
 var is_on_floor = true 
 var _pid := Pid3D.new(30.0, 0.05, 2.0)
-
-# Ammo consumption per weapon type
-const AMMO_COST = {
-	"SWORD": 0,
-	"PISTOL": 1,
-	"SHOTGUN": 5,
-	"MORTAR": 8
-}
 
 # Signals
 signal health_changed(new_health: int, max_health: int)
@@ -43,6 +35,10 @@ func _ready() -> void:
 	gravity_scale = 1.0
 	linear_damp = 0.5
 	angular_damp = 5.0
+	
+	# Set proper collision layers for supply detection
+	collision_layer = 2  # Player layer
+	collision_mask = 7   # Ground (1) + Enemies (4) + Supplies (4) = 7
 	
 	add_to_group("player")
 	
@@ -83,24 +79,18 @@ func _physics_process(delta: float) -> void:
 	_update_floor_detection()
 	_apply_gravity(delta)
 	
-	# Handle shooting with ammo check
-	if Input.is_action_just_pressed("attack") and weapon_system and weapon_system.can_fire:
-		var weapon_type = weapon_system.get_current_weapon_name()
-		var ammo_needed = AMMO_COST.get(weapon_type, 0)
-		
-		# Check if we have enough ammo (sword doesn't need ammo)
-		if ammo_needed == 0 or ammo >= ammo_needed:
+	# FIXED: Use weapon system for all weapons, not just mortar
+	if Input.is_action_just_pressed("attack"):
+		if weapon_system:
 			weapon_system.fire()
+			print("Weapon fired via WeaponManager!")
 			
-			# Only consume ammo after successful fire and if not sword
-			if ammo_needed > 0:
-				ammo -= ammo_needed
-				ammo = max(0, ammo)  # Ensure ammo doesn't go negative
+			# Only consume ammo for non-melee weapons
+			if weapon_system.current_weapon != weapon_system.WeaponType.SWORD and ammo > 0:
+				ammo -= 1
 				ammo_changed.emit(ammo, max_ammo)
-				print("Used ", ammo_needed, " ammo for ", weapon_type, ". Ammo left: ", ammo)
 		else:
-			print("Not enough ammo! Need ", ammo_needed, " but have ", ammo)
-			_show_no_ammo_effect()
+			print("No weapon system found!")
 	
 	# Interact
 	if Input.is_action_just_pressed("interact"):
@@ -130,20 +120,6 @@ func _physics_process(delta: float) -> void:
 	# Jumping logic
 	if Input.is_action_just_pressed("jump"): 
 		_jump()
-
-func _show_no_ammo_effect():
-	"""Show visual feedback when out of ammo"""
-	print("No ammo!")
-	# Flash the character red briefly
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		if mesh.material_override:
-			var material = mesh.material_override as ShaderMaterial
-			if material:
-				var original_color = material.get_shader_parameter("base_color")
-				material.set_shader_parameter("base_color", Color.RED)
-				await get_tree().create_timer(0.2).timeout
-				material.set_shader_parameter("base_color", original_color)
 
 func _update_floor_detection():
 	if feet and feet.is_colliding():
@@ -186,31 +162,8 @@ func take_damage(amount):
 	health_changed.emit(health, max_health)
 	print("Player took ", amount, " damage. Health: ", health)
 	
-	# Visual damage effect
-	_show_damage_effect()
-	
 	if health <= 0:
 		die()
-
-func _show_damage_effect():
-	"""Show visual feedback when taking damage"""
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		if mesh.material_override:
-			var material = mesh.material_override as ShaderMaterial
-			if material:
-				# Flash red
-				var tween = create_tween()
-				tween.tween_method(_flash_damage, 0.0, 1.0, 0.3)
-
-func _flash_damage(progress: float):
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		if mesh.material_override:
-			var material = mesh.material_override as ShaderMaterial
-			if material:
-				var flash_color = Color.GREEN.lerp(Color.RED, sin(progress * PI * 3) * 0.5 + 0.5)
-				material.set_shader_parameter("base_color", flash_color)
 
 func die():
 	if is_dead:
@@ -273,7 +226,7 @@ func respawn():
 	"""Reset player state without regenerating level"""
 	is_dead = false
 	health = max_health
-	ammo = max_ammo  # Reset ammo on respawn
+	ammo = max_ammo
 	freeze = false
 	
 	if has_node("MeshInstance3D"):
@@ -306,66 +259,72 @@ func respawn():
 	
 	print("Player respawned!")
 
-func heal(amount):
+# SUPPLY SYSTEM METHODS
+func heal(amount: int):
+	"""Heal the player by the specified amount"""
 	if is_dead:
-		return
+		return 0
 		
 	var old_health = health
 	health += amount
 	health = min(max_health, health)
-	var healed = health - old_health
-	health_changed.emit(health, max_health)
-	print("Player healed ", healed, ". Health: ", health)
+	var actual_heal = health - old_health
 	
-	# Visual heal effect
-	_show_heal_effect()
+	health_changed.emit(health, max_health)
+	print("Player healed ", actual_heal, ". Health: ", health, "/", max_health)
+	return actual_heal
 
-func _show_heal_effect():
-	"""Show visual feedback when healing"""
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		if mesh.material_override:
-			var material = mesh.material_override as ShaderMaterial
-			if material:
-				# Pulse bright green
-				var tween = create_tween()
-				var original_intensity = material.get_shader_parameter("glow_intensity")
-				tween.tween_property(material, "shader_parameter/glow_intensity", original_intensity * 2.0, 0.3)
-				tween.tween_property(material, "shader_parameter/glow_intensity", original_intensity, 0.3)
-
-func add_ammo(amount):
+func add_ammo(amount: int):
+	"""Add ammo to the player's inventory"""
 	var old_ammo = ammo
 	ammo += amount
 	ammo = min(max_ammo, ammo)
-	var gained = ammo - old_ammo
+	var actual_ammo = ammo - old_ammo
+	
 	ammo_changed.emit(ammo, max_ammo)
-	print("Player gained ", gained, " ammo. Ammo: ", ammo)
+	print("Player gained ", actual_ammo, " ammo. Ammo: ", ammo, "/", max_ammo)
+	return actual_ammo
+
+func get_health() -> int:
+	"""Get current health"""
+	return health
+
+func get_max_health() -> int:
+	"""Get maximum health"""
+	return max_health
+
+func get_ammo() -> int:
+	"""Get current ammo"""
+	return ammo
+
+func get_max_ammo() -> int:
+	"""Get maximum ammo"""
+	return max_ammo
+
+func is_health_full() -> bool:
+	"""Check if health is at maximum"""
+	return health >= max_health
+
+func is_ammo_full() -> bool:
+	"""Check if ammo is at maximum"""
+	return ammo >= max_ammo
+
+func can_use_supplies() -> bool:
+	"""Check if player can benefit from supplies"""
+	return not is_health_full() or not is_ammo_full()
 
 func _try_interact():
 	if is_dead:
 		return
 		
-	# Check for supplies or other interactables
-	var bodies = get_tree().get_nodes_in_group("supplies")
-	for body in bodies:
-		if body.has_method("can_interact") and body.can_interact(self):
-			body.interact()
-			return
-		elif global_position.distance_to(body.global_position) < 3.0:
-			if body.has_method("interact"):
-				body.interact()
-				return
+	if interaction_ray.is_colliding():
+		var target = interaction_ray.get_collider()
+		if target.has_method("interact"):
+			target.interact()
+			print("Interaction completed!")
 
 func _on_weapon_changed(weapon_type):
 	print("Weapon changed to: ", weapon_type)
-	# Update shader color based on weapon
-	if has_node("MeshInstance3D"):
-		var mesh = $MeshInstance3D
-		if mesh.material_override:
-			var material = mesh.material_override as ShaderMaterial
-			if material and weapon_system:
-				var color = weapon_system.get_current_weapon_color()
-				material.set_shader_parameter("base_color", color)
 
 # Mortar functions (for mortar weapon specifically)
 func _fire_mortar_at_cursor():

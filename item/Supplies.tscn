@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3 uid="uid://cnhjwcvre7aux"]
+
+[ext_resource type="Script" path="res://item/Supplies.gd" id="1_supplies"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_supplies"]
+albedo_color = Color(0.2, 0.8, 0.2, 1)
+metallic = 0.2
+roughness = 0.6
+emission = Color(0.1, 0.4, 0.1, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="SphereMesh" id="SphereMesh_lvapk"]
+radial_segments = 4
+rings = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_supplies"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[node name="Supplies" type="RigidBody3D"]
+collision_layer = 4
+mass = 1.5
+linear_damp = 2.0
+angular_damp = 1.0
+script = ExtResource("1_supplies")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_supplies")
+mesh = SubResource("SphereMesh_lvapk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_supplies")
+
+[node name="PickupArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="PickupCollision" type="CollisionShape3D" parent="PickupArea"]
+shape = SubResource("BoxShape3D_supplies")
+
+[node name="GlowLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+light_color = Color(0.3, 0.8, 0.3, 1)
+light_energy = 1.2
+omni_range = 3.0

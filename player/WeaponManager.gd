@@ -10,7 +10,7 @@ enum WeaponType {
 
 const WEAPON_STATS = {
 	WeaponType.SWORD: {
-		"damage": 50,
+		"damage": 100,
 		"range": 4.0,
 		"cooldown": 0.5,
 		"knockback": 50.0,
@@ -75,7 +75,7 @@ func _ready():
 	if muzzle_flash:
 		_setup_muzzle_flash()
 	
-	switch_weapon(WeaponType.PISTOL)
+	switch_weapon(WeaponType.SWORD)
 
 func _setup_muzzle_flash():
 	"""Setup the muzzle flash particle system"""
@@ -175,6 +175,13 @@ func _fire_sword():
 	print("Firing sword!")
 	sword_hitbox.monitoring = true
 	
+	var hit_body = sword_hitbox.body_entered.get_object()
+	print(hit_body)
+	if sword_hitbox.overlaps_body(hit_body): 
+		if hit_body.has_method("take_damage"):
+			hit_body.take_damage(WEAPON_STATS[WeaponType.PISTOL]["damage"])
+			print("Sword dealt ", WEAPON_STATS[WeaponType.PISTOL]["damage"], " damage to ", hit_body.name)
+
 	# Visual thrust effect
 	var tween = create_tween()
 	var thrust_direction = -owner_body.transform.basis.z * 0.3
@@ -186,6 +193,7 @@ func _fire_sword():
 	
 	await get_tree().create_timer(0.2).timeout
 	sword_hitbox.monitoring = false
+	
 
 func _create_sword_swing_effect():
 	"""Create a visual effect for sword swing"""

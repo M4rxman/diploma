@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://bkoshylrfy1x8"]
+[gd_scene load_steps=3 format=3 uid="uid://bkoshylrfy1x8"]
 
 [ext_resource type="Script" path="res://Spawning/Wave.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cnhjwcvre7aux" path="res://item/Supplies.tscn" id="2_kwk24"]
 
 [node name="Wave" type="Node"]
 script = ExtResource("1")
+DropItem = ExtResource("2_kwk24")

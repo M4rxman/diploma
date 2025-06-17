@@ -321,58 +321,60 @@ func die() -> void:
 
 func _create_death_effect():
 	"""Create visual effect when enemy dies"""
-	# Create explosion particles
-	var explosion = GPUParticles3D.new()
-	get_parent().add_child(explosion)
-	explosion.global_position = global_position + Vector3(0, 0.5, 0)
-	explosion.emitting = true
-	explosion.amount = 50
-	explosion.lifetime = 1.0
-	explosion.one_shot = true
+	"""Create simple explosion visual effect"""
+	print("BOOM! Explosion at: ", global_position)
 	
-	var process_mat = ParticleProcessMaterial.new()
-	process_mat.initial_velocity_min = 3.0
-	process_mat.initial_velocity_max = 8.0
-	process_mat.angular_velocity_min = -360.0
-	process_mat.angular_velocity_max = 360.0
-	process_mat.scale_min = 0.1
-	process_mat.scale_max = 0.3
-	process_mat.gravity = Vector3(0, -10, 0)
-
-	# <-- Ось тут було помилково
-	var gradient := Gradient.new()
-	gradient.add_point(0.0, Color(1, 0, 0))
-	gradient.add_point(0.5, Color(0.8, 0, 0))
-	gradient.add_point(1.0, Color(0.3, 0, 0))
-	process_mat.color_ramp = gradient
-	
-	# Create mesh for particles
-	var chunk_mesh = BoxMesh.new()
-	chunk_mesh.size = Vector3(0.2, 0.2, 0.2)
-	
-	var chunk_material = StandardMaterial3D.new()
-	chunk_material.albedo_color = Color(0.6, 0, 0)
-	chunk_mesh.material = chunk_material
-	
-	explosion.draw_pass_1 = chunk_mesh
-	
-	# Create a light flash
-	var death_light = OmniLight3D.new()
-	death_light.light_color = Color(1, 0.5, 0)
-	death_light.light_energy = 5.0
-	death_light.omni_range = 8.0
-	get_parent().add_child(death_light)
-	death_light.global_position = global_position
-	
-	# Fade out light
-	var light_tween = create_tween()
-	light_tween.tween_property(death_light, "light_energy", 0.0, 0.5)
-	light_tween.tween_callback(death_light.queue_free)
-	
-	# Clean up explosion after some time
-	await get_tree().create_timer(2.0).timeout
-	if is_instance_valid(explosion):
-		explosion.queue_free()
+	# Create particles instead of persistent light
+	for i in range(8):
+		var particle = RigidBody3D.new()
+		var mesh_instance = MeshInstance3D.new()
+		var sphere_mesh = SphereMesh.new()
+		sphere_mesh.radius = 0.1
+		sphere_mesh.height = 0.2
+		
+		# Random explosion colors
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(
+			randf_range(0.8, 1.0),  # Red
+			randf_range(0.3, 0.4),  # Green  
+			randf_range(0.0, 0.2)   # Blue
+		)
+		material.emission = material.albedo_color * 2.0
+		sphere_mesh.material = material
+		
+		mesh_instance.mesh = sphere_mesh
+		particle.add_child(mesh_instance)
+		
+		# Add collision
+		var collision = CollisionShape3D.new()
+		var sphere_shape = SphereShape3D.new()
+		sphere_shape.radius = 0.1
+		collision.shape = sphere_shape
+		particle.add_child(collision)
+		
+		# Add to scene
+		get_tree().current_scene.add_child(particle)
+		particle.global_position = global_position
+		
+		# Random explosion velocity
+		var explosion_velocity = Vector3(
+			randf_range(-10, 10),
+			randf_range(5, 15),
+			randf_range(-10, 10)
+		)
+		particle.linear_velocity = explosion_velocity
+		
+		# Auto-cleanup particles
+		var cleanup_timer = Timer.new()
+		cleanup_timer.wait_time = 2.0
+		cleanup_timer.one_shot = true
+		cleanup_timer.timeout.connect(func(): 
+			if is_instance_valid(particle): 
+				particle.queue_free()
+		)
+		particle.add_child(cleanup_timer)
+		cleanup_timer.start()
+		
 
 # AI control methods for testing
 func _set_ai_to_false() -> void:

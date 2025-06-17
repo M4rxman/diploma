@@ -1,9 +1,10 @@
-# Spawning/LevelSpawner.gd - Fixed with proper reset method
+# Spawning/LevelSpawner.gd - Fixed with proper supply spawning
 extends Node3D
 
 class_name LevelSpawner
 
 @export var enemy_scene: PackedScene = preload("res://scenes/generic_enemy.tscn")
+@export var supplies_scene: PackedScene = preload("res://item/Supplies.tscn")
 
 var waves: Array = []
 var current_wave: Wave = null
@@ -56,11 +57,16 @@ func reset():
 	enemies_remaining_to_spawn = 0
 	spawner_ready = false
 	
-	# Clear existing enemies
+	# Clear existing enemies and supplies
 	var existing_enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in existing_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
+	
+	var existing_supplies = get_tree().get_nodes_in_group("supplies")
+	for supply in existing_supplies:
+		if is_instance_valid(supply):
+			supply.queue_free()
 	
 	# Wait a frame for cleanup, then start
 	await get_tree().process_frame
@@ -99,11 +105,11 @@ func initialize_waves():
 	
 	# Create wave configurations with progressive difficulty
 	var wave_configs = [
-		{"enemies": 3, "health": 40.0, "damage": 15, "speed": 3.0, "spawn_delay": 2.0},
-		{"enemies": 5, "health": 55.0, "damage": 20, "speed": 3.5, "spawn_delay": 1.8},
-		{"enemies": 7, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5},
-		{"enemies": 10, "health": 85.0, "damage": 30, "speed": 4.5, "spawn_delay": 1.2},
-		{"enemies": 12, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0}
+		{"enemies": 3, "health": 40.0, "damage": 15, "speed": 3.0, "spawn_delay": 2.0, "drop_supplies": true},
+		{"enemies": 5, "health": 55.0, "damage": 20, "speed": 3.5, "spawn_delay": 1.8, "drop_supplies": true},
+		{"enemies": 7, "health": 70.0, "damage": 25, "speed": 4.0, "spawn_delay": 1.5, "drop_supplies": true},
+		{"enemies": 10, "health": 85.0, "damage": 30, "speed": 4.5, "spawn_delay": 1.2, "drop_supplies": true},
+		{"enemies": 12, "health": 100.0, "damage": 35, "speed": 5.0, "spawn_delay": 1.0, "drop_supplies": true}
 	]
 	
 	# Convert configs to Wave objects
@@ -116,6 +122,11 @@ func initialize_waves():
 		wave_data.damage = config["damage"]
 		wave_data.move_speed = config["speed"]
 		wave_data.second_between_spawns = config["spawn_delay"]
+		
+		# Set drop chance for supplies
+		if config.get("drop_supplies", false):
+			wave_data.drop_chance = 1.0  # 100% chance to drop supplies
+			wave_data.drop_when = 0.8    # Drop when 80% of enemies are killed
 		
 		waves.append(wave_data)
 		print("Initialized Wave ", i + 1, " - Enemies: ", wave_data.num_enemies, " Health: ", wave_data.health)
@@ -224,21 +235,89 @@ func spawn_enemy():
 	print("Spawned enemy ", enemies_spawned_this_wave, "/", current_wave.num_enemies, " at ", spawn_pos)
 
 func _on_enemy_died(enemy):
-	"""Handle enemy death"""
-	print("Enemy died! Checking wave completion...")
+	"""Handle enemy death and check for supply drops"""
+	print("Enemy died! Checking wave completion and supply drops...")
 	
 	# Brief delay to ensure enemy is processed
 	await get_tree().process_frame
 	
 	var remaining_enemies = get_tree().get_nodes_in_group("enemies").size()
 	var spawning_complete = enemies_remaining_to_spawn <= 0
+	var enemies_killed = current_wave.num_enemies - remaining_enemies
 	
 	print("Remaining enemies: ", remaining_enemies, " Spawning complete: ", spawning_complete)
+	print("Enemies killed: ", enemies_killed, "/", current_wave.num_enemies)
+	
+	# Check if supplies should be dropped
+	if current_wave and current_wave.has_method("should_drop"):
+		if current_wave.should_drop(enemies_killed):
+			spawn_supplies_near_player()
 	
 	# Check if wave is complete
 	if spawning_complete and remaining_enemies <= 0:
 		complete_current_wave()
 
+func spawn_supplies_near_player():
+	"""Spawn supplies near the player at ground level"""
+	print("Dropping supplies for the player!")
+	
+	var player = get_tree().get_first_node_in_group("player")
+	if not player:
+		print("No player found for supply drop")
+		return
+	
+	# Find a good spawn position near the player
+	var player_pos = player.global_position
+	var spawn_attempts = 10
+	
+	for i in range(spawn_attempts):
+		# Try to spawn supplies near player but not too close
+		var random_offset = Vector3(
+			randf_range(-4, 4),
+			0,  # Will be adjusted by physics
+			randf_range(-4, 4)
+		)
+		
+		var spawn_pos = player_pos + random_offset
+		
+		# Make sure it's at a reasonable height (will fall with physics)
+		spawn_pos.y = max(spawn_pos.y + 3.0, 5.0)
+		
+		# Check if position is clear using raycast
+		if is_spawn_position_clear(spawn_pos):
+			create_supplies_at_position(spawn_pos)
+			return
+	
+	# Fallback: spawn at player position + height
+	var fallback_pos = player_pos + Vector3(0, 5, 2)
+	create_supplies_at_position(fallback_pos)
+
+func create_supplies_at_position(position: Vector3):
+	"""Create supplies at the specified position"""
+	if supplies_scene:
+		var supplies = supplies_scene.instantiate()
+		get_tree().current_scene.add_child(supplies)
+		supplies.global_position = position
+		print("Supplies spawned at: ", position)
+	else:
+		# Fallback: create supplies using the static method
+		var supplies_script = preload("res://item/Supplies.gd")
+		if supplies_script:
+			var supplies = supplies_script.create_supplies_at(position, get_tree().current_scene)
+			if supplies:
+				print("Supplies created via static method at: ", position)
+
+func is_spawn_position_clear(pos: Vector3) -> bool:
+	"""Check if spawn position is clear for supplies"""
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(
+		pos + Vector3.UP * 1,
+		pos - Vector3.UP * 3
+	)
+	query.collision_mask = 1  # Only check static geometry
+	
+	var result = space_state.intersect_ray(query)
+	return not result.is_empty()  # Should hit ground
 
 func complete_current_wave():
 	"""Complete current wave and start next one"""
@@ -246,9 +325,6 @@ func complete_current_wave():
 	timer.stop()
 	
 	print("Wave ", current_wave_number + 1, " completed!")
-	
-	# Spawn supplies crate as reward
-	_spawn_supplies()
 	
 	# Brief pause before next wave
 	await get_tree().create_timer(2.0).timeout
@@ -263,7 +339,6 @@ func complete_all_waves():
 	
 	print("ALL WAVES COMPLETED!")
 	level_complete.emit()
-
 
 func get_random_spawn_position() -> Vector3:
 	"""Get a random valid spawn position"""
@@ -294,26 +369,10 @@ func is_position_clear(pos: Vector3) -> bool:
 		pos + Vector3.UP * 2,
 		pos - Vector3.UP * 1
 	)
-	query.collision_mask = 1  # Only check static geometry
+	query.collision_mask = 1  # Only check static bodies/walls
 	
 	var result = space_state.intersect_ray(query)
 	return not result.is_empty()  # Should hit ground
-
-func _spawn_supplies():
-	"""Spawn a supplies crate after wave completion"""
-	# Get a good spawn position
-	var spawn_pos = get_random_spawn_position()
-	spawn_pos.y += 2.0  # Spawn it a bit higher so it falls down
-	
-	# Create the supplies - load the Supplies class
-	var supplies = Supplies.new()
-	supplies.name = "WaveSupplies"
-	
-	# Add to scene
-	get_tree().current_scene.add_child(supplies)
-	supplies.global_position = spawn_pos
-	
-	print("Spawned supplies crate at: ", spawn_pos)
 
 # Getter methods
 func get_enemies_remaining() -> int:

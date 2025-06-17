@@ -30,7 +30,7 @@ points = PackedVector3Array(-0.0268873, -0.487145, -0.0151637, 0.00348619, 0.030
 size = Vector3(1, 0.1, 2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_acccu"]
-size = Vector3(1, 0.1, 1)
+size = Vector3(1, 0.1, 2)
 
 [node name="Character" type="RigidBody3D"]
 top_level = true
@@ -70,13 +70,13 @@ mortar_shell_scene = ExtResource("2_l3lwv")
 
 [node name="SwordHitbox" type="Area3D" parent="WeaponManager"]
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, -0.5)
+collision_mask = 3
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="WeaponManager/SwordHitbox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.1)
 shape = SubResource("BoxShape3D_ihhl1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="WeaponManager/SwordHitbox/CollisionShape3D"]
-visible = false
 mesh = SubResource("BoxMesh_acccu")
 
 [node name="HitscanRaycast" type="RayCast3D" parent="WeaponManager"]
