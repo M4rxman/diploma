@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Інформаційна ігрова система на рушії Godot в жанрі шутер - бакалаврська робота СумДУ. Розробка Top-Down Shooter з модульною архітектурою та ШІ на основі PID контролера">
+    <meta name="keywords" content="Godot Engine, ігрова розробка, шутер, PID контролер, модульна архітектура, GDScript, ігровий ШІ, СумДУ, Алещенко">
+    <meta name="author" content="Алещенко Олександр">
+    
+    <!-- Open Graph теги -->
+    <meta property="og:title" content="Ігрова система на Godot Engine - Дипломна робота СумДУ">
+    <meta property="og:description" content="Розробка інноваційної Top-Down Shooter гри з використанням PID контролера для ШІ та модульної архітектури">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/assets/godot-game-preview.jpg">
+    
+    <!-- Schema.org розмітка -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ScholarlyArticle",
+      "headline": "Інформаційна ігрова система на рушії Godot в жанрі шутер",
+      "author": {
+        "@type": "Person",
+        "name": "Алещенко Олександр"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Сумський державний університет"
+      },
+      "datePublished": "2025-06-13",
+      "inLanguage": "uk",
+      "about": "Game Development, Godot Engine, Artificial Intelligence"
+    }
+    </script>
+    
+    <title>Ігрова система на Godot | Дипломна робота Алещенка О. | СумДУ</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    
+    <style>
+        /* CSS Reset & Normalize */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: linear-gradient(135deg, #478be6 0%, #4299e1 25%, #63b3ed 50%, #90cdf4 100%);
+            min-height: 100vh;
+        }
+        
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            color: #1a202c;
+        }
+        
+        h2 {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            color: #2d3748;
+        }
+        
+        h3 {
+            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+            color: #4a5568;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            margin: 2rem auto;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #1a365d 0%, #2b77ad 50%, #4299e1 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M 8 0 L 0 0 0 8" fill="none" stroke="%23ffffff" stroke-width="0.3" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            pointer-events: none;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .university-info {
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.95;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .thesis-title {
+            margin: 1.5rem 0;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            line-height: 1.1;
+        }
+        
+        .thesis-title-en {
+            font-size: 1.3rem;
+            font-style: italic;
+            opacity: 0.9;
+            margin-top: 1rem;
+            font-weight: 400;
+        }
+        
+        .author-info {
+            margin-top: 2.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .supervisor {
+            margin-top: 0.8rem;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .tech-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin: 0.2rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Sections */
+        section {
+            padding: 3rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        section:last-child {
+            border-bottom: none;
+        }
+        
+        .intro {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        }
+        
+        .short-description {
+            font-size: 1.3rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto 2rem;
+            color: #2d3748;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .keyword {
+            background: linear-gradient(135deg, #4299e1 0%, #2b77ad 100%);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+        }
+        
+        /* Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #4299e1 0%, #2b77ad 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 1.8rem;
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+        }
+        
+        /* Architecture section */
+        .architecture {
+            background: linear-gradient(135deg, #f0f4f8 0%, #d6e9f0 100%);
+        }
+        
+        .architecture-layers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .layer {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 5px solid #4299e1;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .layer h4 {
+            color: #2b77ad;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        
+        .layer ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .layer li {
+            padding: 0.3rem 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 1.2rem;
+        }
+        
+        .layer li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #4299e1;
+            font-weight: bold;
+        }
+        
+        /* Tasks list */
+        .tasks-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 2rem;
+        }
+        
+        .tasks-list li {
+            background: #f8fafc;
+            margin-bottom: 1.2rem;
+            padding: 1.8rem;
+            border-radius: 12px;
+            border-left: 5px solid #4299e1;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .tasks-list li:hover {
+            background: #edf2f7;
+            transform: translateX(5px);
+        }
+        
+        .tasks-list li::before {
+            content: '✓';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4299e1;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+        }
+        
+        /* Results section */
+        .results {
+            background: linear-gradient(135deg, #f0fff4 0%, #dcfce7 100%);
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .result-item {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 2px solid #dcfce7;
+        }
+        
+        .result-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-label {
+            font-size: 1.1rem;
+            color: #065f46;
+            font-weight: 600;
+        }
+        
+        /* Demo section */
+        .demo-section {
+            background: linear-gradient(135deg, #fefbff 0%, #f3e8ff 100%);
+        }
+        
+        .demo-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+            display: block;
+            border: 3px solid #e9d5ff;
+        }
+        
+        /* Contact section */
+        .contact {
+            background: linear-gradient(135deg, #1a365d 0%, #2b77ad 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .contact h2 {
+            color: white;
+        }
+        
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .contact-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .contact-item h3 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 1.2rem 2.5rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(245, 158, 11, 0.5);
+        }
+        
+        /* Footer */
+        footer {
+            background: #1a202c;
+            color: white;
+            text-align: center;
+            padding: 2.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            section {
+                padding: 2rem 1rem;
+            }
+            
+            header {
+                padding: 2rem 1rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .contact-info {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .architecture-layers {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Focus styles */
+        a:focus, button:focus {
+            outline: 3px solid #4299e1;
+            outline-offset: 2px;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .main-content {
+                box-shadow: none;
+                margin: 0;
+            }
+            
+            header {
+                background: #1a365d !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main class="main-content" role="main">
+            <header>
+                <div class="header-content">
+                    <div class="university-info">
+                        <strong>Сумський державний університет</strong><br>
+                        Факультет електроніки та інформаційних технологій<br>
+                        Кафедра комп'ютерних наук
+                    </div>
+                    
+                    <h1 class="thesis-title">
+                        Інформаційна ігрова система на рушії Godot в жанрі шутер
+                    </h1>
+                    
+                    <p class="thesis-title-en">
+                        Game Information System on Godot Engine in Shooter Genre
+                    </p>
+                    
+                    <div style="margin: 1.5rem 0;">
+                        <span class="tech-badge">Godot Engine</span>
+                        <span class="tech-badge">GDScript</span>
+                        <span class="tech-badge">PID Controller</span>
+                        <span class="tech-badge">3D Physics</span>
+                        <span class="tech-badge">AI Systems</span>
+                    </div>
+                    
+                    <div class="author-info">
+                        <strong>Автор:</strong> Алещенко Олександр<br>
+                        <div class="supervisor">
+                            <strong>Науковий керівник:</strong> Москаленко В.В.
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="intro">
+                <h2>Про проєкт</h2>
+                <p class="short-description">
+                    Розробка повнофункціональної Top-Down Shooter гри з використанням модульної архітектури, інноваційного PID контролера для штучного інтелекту та системи тестування на платформі Godot Engine
+                </p>
+                
+                <div class="keywords" role="list">
+                    <span class="keyword" role="listitem">Godot Engine</span>
+                    <span class="keyword" role="listitem">Game Development</span>
+                    <span class="keyword" role="listitem">PID Controller</span>
+                    <span class="keyword" role="listitem">AI Systems</span>
+                    <span class="keyword" role="listitem">GDScript</span>
+                    <span class="keyword" role="listitem">RigidBody3D</span>
+                    <span class="keyword" role="listitem">JSON Serialization</span>
+                    <span class="keyword" role="listitem">Unit Testing</span>
+                </div>
+            </section>
+
+            <section>
+                <h2>Актуальність дослідження</h2>
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">🎮</div>
+                        <h3>Зростання ігрової індустрії</h3>
+                        <p>Розвиток ігрової індустрії та зростання популярності незалежної розробки створює потребу в дослідженні можливостей сучасних безкоштовних ігрових рушіїв.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">⚡</div>
+                        <h3>Godot Engine</h3>
+                        <p>Як один з найперспективніших opensource рушіїв, Godot потребує детального вивчення можливостей для створення складних ігрових систем.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">🏗️</div>
+                        <h3>Архітектурні рішення</h3>
+                        <p>Потреба в дослідженні ефективних архітектурних підходів до створення модульних та масштабованих ігрових систем.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Мета дослідження</h2>
+                <p style="font-size: 1.3rem; text-align: center; max-width: 950px; margin: 0 auto; font-weight: 500; line-height: 1.4;">
+                    Розробка <strong>інформаційної ігрової системи</strong> на рушії Godot в жанрі шутер з реалізацією повного циклу ігрових механік, модульної архітектури та комплексної системи тестування.
+                </p>
+            </section>
+
+            <section class="architecture">
+                <h2>Архітектура системи</h2>
+                <p style="text-align: center; margin-bottom: 2rem; font-size: 1.1rem;">
+                    Модульний архітектурний підхід з використанням принципів <strong>SOLID та Clean Architecture</strong>
+                </p>
+                <div class="architecture-layers">
+                    <div class="layer">
+                        <h4>Presentation Layer</h4>
+                        <ul>
+                            <li>Main_scene.tscn - головна сцена гри</li>
+                            <li>UI компоненти</li>
+                            <li>Система введення</li>
+                        </ul>
+                    </div>
+                    <div class="layer">
+                        <h4>Business Logic Layer</h4>
+                        <ul>
+                            <li>GameManager.gd - центральний менеджер</li>
+                            <li>Player контролер</li>
+                            <li>Enemy AI система</li>
+                            <li>Weapon система</li>
+                        </ul>
+                    </div>
+                    <div class="layer">
+                        <h4>Data Layer</h4>
+                        <ul>
+                            <li>SaveManager.gd - система збереження</li>
+                            <li>Конфігураційні файли</li>
+                            <li>Ресурси гри</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Основні завдання</h2>
+                <ul class="tasks-list">
+                    <li><strong>Аналіз предметної області</strong> - дослідження сучасного стану розробки ігор на Godot Engine та особливості жанру шутер</li>
+                    <li><strong>Архітектурні підходи</strong> - дослідження та розробка модульних ігрових систем з чітким розділенням відповідальностей</li>
+                    <li><strong>Система управління персонажем</strong> - розробка з реалістичною фізикою руху на основі RigidBody3D</li>
+                    <li><strong>Штучний інтелект</strong> - створення системи ШІ для ворогів з адаптивною поведінкою та PID контролером</li>
+                    <li><strong>Бойові механіки</strong> - реалізація системи зброї та бойових взаємодій</li>
+                    <li><strong>Система збереження</strong> - розробка надійної системи збереження та завантаження з JSON серіалізацією</li>
+                    <li><strong>Тестування</strong> - створення комплексної системи тестування з використанням GUT фреймворку</li>
+                </ul>
+            </section>
+
+            <section class="results">
+                <h2>Отримані результати</h2>
+                <p style="text-align: center; font-size: 1.2rem; margin-bottom: 2rem; color: #065f46;">
+                    Успішна реалізація всіх поставлених завдань з видатними показниками продуктивності
+                </p>
+                <div class="results-grid">
+                    <div class="result-item">
+                        <div class="result-number">58</div>
+                        <div class="result-label">FPS з 10 ворогами</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">29%</div>
+                        <div class="result-label">Покращення реалізму</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">9/10</div>
+                        <div class="result-label">Плавність руху ШІ</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">100%</div>
+                        <div class="result-label">Покриття тестами</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="demo-section">
+                <h2>Інноваційні рішення</h2>
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">🧠</div>
+                        <h3>PID Контролер для ШІ</h3>
+                        <p>Використання промислових алгоритмів управління для ігрових застосувань. Коефіцієнти: Kp=25.0, Ki=0.1, Kd=1.0 забезпечують оптимальну поведінку ворогів.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">⚙️</div>
+                        <h3>RigidBody3D Фізика</h3>
+                        <p>Заміна CharacterBody3D на RigidBody3D для всіх персонажів забезпечила природну фізичну взаємодію та реалістичну поведінку.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">💾</div>
+                        <h3>JSON Серіалізація</h3>
+                        <p>Гнучка система збереження з використанням JSON формату, що забезпечує читабельність та розширюваність даних.</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-icon" aria-hidden="true">🧪</div>
+                        <h3>Автоматизоване тестування</h3>
+                        <p>Комплексна система тестування з використанням GUT фреймворку для забезпечення якості та надійності коду.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="contact">
+                <h2>Контактна інформація</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                    Дипломна робота виконана у 2025 році на кафедрі комп'ютерних наук СумДУ
+                </p>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <h3>🎓 Автор роботи</h3>
+                        <p>Алещенко Олександр<br>
+                        Студент кафедри комп'ютерних наук<br>
+                        Сумський державний університет</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h3>📚 Повний текст роботи</h3>
+                        <p>Ознайомитися з повною версією дипломної роботи можна в бібліотеці СумДУ або за посиланням нижче</p>
+                        <a href="#" class="btn" role="button">Завантажити PDF</a>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h3>💻 Вихідний код</h3>
+                        <p>Репозиторій проєкту з повним вихідним кодом гри та системи тестування</p>
+                        <a href="#" class="btn" role="button">GitHub Repository</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 Алещенко Олександр. Дипломна робота виконана в СумДУ.</p>
+            <p style="margin-top: 0.5rem; opacity: 0.8;">
+                Використання матеріалів дозволено з посиланням на джерело
+            </p>
+        </div>
+    </footer>
+
+    <!-- robots.txt and sitemap.xml would be separate files -->
+    <!-- Structured data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      "name": "Інформаційна ігрова система на рушії Godot в жанрі шутер",
+      "author": {
+        "@type": "Person",
+        "name": "Алещенко Олександр"
+      },
+      "dateCreated": "2025-06-13",
+      "description": "Дипломна робота присвячена розробці ігрової системи на Godot Engine з використанням модульної архітектури та PID контролера для ШІ",
+      "keywords": "Godot Engine, ігрова розробка, PID контролер, модульна архітектура, штучний інтелект",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Сумський державний університет"
+      }
+    }
+    </script>
+</body>
+</html>
