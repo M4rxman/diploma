@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cbs1l6m41agl" path="res://Level/ground-grid.png" id="1"]
 
 [resource]
-transparency = 1
+albedo_color = Color(0, 0, 0, 1)
 albedo_texture = ExtResource("1")
 uv1_scale = Vector3(0.5, 0.5, 0.5)
 uv1_offset = Vector3(0.5, 0, 0.5)

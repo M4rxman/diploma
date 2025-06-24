@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://m4rxman.github.io/diploma/website/sitemap.xml

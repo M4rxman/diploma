@@ -28,78 +28,97 @@ script = ExtResource("5")
 navigation_mesh = SubResource("1")
 
 [node name="Ground" parent="NavigationMeshInstance" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0115595, -0.985962, 0.00618267)
 size = Vector3(22, 1, 14)
 
 [node name="CSGBox" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.10384, 0)
+visible = false
 size = Vector3(1, 2.20768, 1)
 
 [node name="CSGBox2" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.08932, -2)
+visible = false
 size = Vector3(1, 2.17863, 1)
 
 [node name="CSGBox3" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.928091, 4)
+visible = false
 size = Vector3(1, 1.85618, 1)
 
 [node name="CSGBox4" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.01913, 6)
+visible = false
 size = Vector3(1, 2.03826, 1)
 
 [node name="CSGBox5" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.787623, -6)
+visible = false
 size = Vector3(1, 1.57525, 1)
 
 [node name="CSGBox6" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.679251, 0)
+visible = false
 size = Vector3(1, 1.3585, 1)
 
 [node name="CSGBox7" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.928174, 4)
+visible = false
 size = Vector3(1, 1.85635, 1)
 
 [node name="CSGBox8" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.892582, 2)
+visible = false
 size = Vector3(1, 1.78516, 1)
 
 [node name="CSGBox9" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.10351, 6)
+visible = false
 size = Vector3(1, 2.20702, 1)
 
 [node name="CSGBox10" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1.02429, 6)
+visible = false
 size = Vector3(1, 2.04858, 1)
 
 [node name="CSGBox11" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1.12826, -2)
+visible = false
 size = Vector3(1, 2.25651, 1)
 
 [node name="CSGBox12" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.615975, -4)
+visible = false
 size = Vector3(1, 1.23195, 1)
 
 [node name="CSGBox13" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.896138, 4)
+visible = false
 size = Vector3(1, 1.79228, 1)
 
 [node name="CSGBox14" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1.09719, -4)
+visible = false
 size = Vector3(1, 2.19438, 1)
 
 [node name="CSGBox15" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.608243, -6)
+visible = false
 size = Vector3(1, 1.21649, 1)
 
 [node name="CSGBox16" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.529795, -6)
+visible = false
 size = Vector3(1, 1.05959, 1)
 
 [node name="CSGBox17" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.775191, -6)
+visible = false
 size = Vector3(1, 1.55038, 1)
 
 [node name="CSGBox18" parent="NavigationMeshInstance" instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.514131, 2)
+visible = false
 size = Vector3(1, 1.02826, 1)
 
 [node name="Waves" type="Node" parent="."]
