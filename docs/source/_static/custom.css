@@ -1,0 +1,21 @@
+/* Custom CSS for game documentation */
+.wy-nav-content {
+    max-width: none;
+}
+
+.rst-content .section > h1 {
+    color: #2980b9;
+    border-bottom: 3px solid #3498db;
+}
+
+.rst-content .section > h2 {
+    color: #27ae60;
+    border-bottom: 2px solid #2ecc71;
+}
+
+.rst-content pre.literal-block, 
+.rst-content div[class^='highlight'] {
+    background-color: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+}

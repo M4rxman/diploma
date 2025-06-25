@@ -1,0 +1,6 @@
+build/
+_build/
+.doctrees/
+venv/
+*.pyc
+__pycache__/
