@@ -1,4 +1,7 @@
-# scripts/GameManager.gd - Fixed with proper level regeneration and camera
+## Initialize core game systems
+##
+## Sets up player, enemies, and UI systems.
+## Should be called before game starts.
 extends Node3D
 
 class_name GameManager
@@ -24,6 +27,10 @@ signal wave_changed(wave_number: int)
 signal enemies_count_changed(count: int)
 signal level_completed_signal
 
+## Initialize the game systems
+##
+## Called when the node enters the scene tree.
+## Sets up all necessary game components and their connections.
 func _ready():
 	# Add to game manager group for easy finding
 	add_to_group("game_manager")
@@ -51,6 +58,10 @@ func _ready():
 	
 	print("GameManager initialized, waiting for level generation...")
 
+## Set up the camera to the correct position and angle
+##
+## Resets camera to proper isometric-like view with position at (0, 20, 6)
+## looking at the world origin. Sets appropriate field of view for gameplay.
 func setup_camera():
 	"""Set up the camera to the correct position and angle"""
 	if has_node("Camera3D"):
@@ -61,6 +72,10 @@ func setup_camera():
 		camera.fov = 60.0
 		print("Camera positioned at: ", camera.global_position, " looking at origin")
 
+## Create and setup the game UI
+##
+## Instantiates the GameUI script and adds it to the scene tree
+## as a CanvasLayer for proper rendering order above 3D content.
 func setup_game_ui():
 	"""Create and setup the game UI"""
 	# Create the UI script instance
@@ -76,6 +91,7 @@ func setup_game_ui():
 	
 	print("Game UI initialized")
 
+
 func _input(event):
 	if event.is_action_pressed("save_game"):
 		save_current_game()
@@ -88,6 +104,11 @@ func _physics_process(delta: float) -> void:
 	# Handle mouse cursor direction for player
 	handle_mouse_cursor()
 
+## Handle player rotation based on mouse cursor position
+##
+## Uses camera ray casting to determine where the mouse is pointing
+## in 3D space and rotates the player to look at that position.
+## Only operates when player is alive.
 func handle_mouse_cursor():
 	"""Handle player rotation based on mouse cursor"""
 	if not player or (player.get("is_dead") and player.is_dead):
@@ -161,6 +182,11 @@ func try_load_saved_game():
 	print("No save file found or load failed, starting new game.")
 	start_new_game()
 
+## Initialize a new game session
+##
+## Resets game state, player stats, and positions the player
+## at the center of the generated level. Called when starting
+## a fresh game or after loading fails.
 func start_new_game():
 	"""Initialize a new game session"""
 	print("Starting new game session...")
@@ -183,6 +209,10 @@ func start_new_game():
 		player.global_position = center_world_pos
 		print("Player positioned at level center: ", center_world_pos)
 
+## Save the current game state
+##
+## Collects current player state, enemy positions, level settings,
+## and passes them to the SaveManager for persistence to disk.
 func save_current_game():
 	"""Save the current game state"""
 	if not save_manager:
@@ -221,6 +251,11 @@ func load_saved_game():
 	else:
 		print("Load failed, continuing current session.")
 
+## Regenerate the current level with new settings
+##
+## Clears UI messages, resets game state, and triggers level
+## regeneration through the DynamicLevelManager. Repositions
+## camera after regeneration is complete.
 func regenerate_current_level():
 	"""Regenerate the current level with new settings"""
 	if level_manager:
@@ -325,6 +360,12 @@ func _turn_off_enemy_ai() -> bool:
 			success = false
 	return success
 
+## Turn on AI for all enemies
+##
+## Activates AI behavior for all enemies currently in the scene.
+## Used when resuming game or starting new waves.
+##
+## @return: true if all enemies have AI enabled successfully, false otherwise
 func _turn_on_enemy_ai() -> bool:
 	"""Turn on AI for all enemies"""
 	var enemies = get_current_enemies()
@@ -336,11 +377,22 @@ func _turn_on_enemy_ai() -> bool:
 			success = false
 	return success
 
+## Turn off AI for all enemies
+##
+## Deactivates AI behavior for all enemies currently in the scene.
+## Used for pausing or debugging purposes.
+##
+## @return: true if all enemies have AI disabled successfully, false otherwise
 func turn_off_enemy_ai() -> bool:
-	return _turn_off_enemy_ai()
+	var enemies = get_current_enemies()
+	var success = true
+	for enemy in enemies:
+		if enemy.has_method("_set_ai_to_false"):
+			enemy._set_ai_to_false()
+		else:
+			success = false
+	return success
 
-func turn_on_enemy_ai() -> bool:
-	return _turn_on_enemy_ai()
 
 func get_ai_status() -> bool:
 	"""Get AI status from first enemy"""

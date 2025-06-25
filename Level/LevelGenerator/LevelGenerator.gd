@@ -1,3 +1,8 @@
+## Procedural level generation system
+##
+## LevelGenerator creates dynamic game levels with navigation meshes,
+## spawn points, and obstacle placement. Generates levels based on
+## difficulty parameters and player progression.
 @tool
 extends Node3D
 
@@ -108,9 +113,15 @@ func fill_obstacle_map():
 		level.obstacle_map.append([])
 		for z in range(map_depth):
 			level.obstacle_map[x].append(false)
-	
+
+
+## Generate a new level with specified parameters
+##
+## Creates level geometry, navigation mesh, and spawn points
+## based on difficulty settings and size requirements.
+##
 func generate_map():
-	print("Bleep bloop generating map...")
+	# print("Bleep bloop generating map...")
 	
 	clear_map()
 	add_level()

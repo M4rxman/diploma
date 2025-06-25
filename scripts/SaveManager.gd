@@ -1,8 +1,23 @@
-# scripts/SaveManager.gd
+## System for saving and loading game state
+##
+## SaveManager handles all persistence operations for the game,
+## including player position, enemy states, and level data.
+## Uses JSON format for human-readable save files.
+##
+## 
 extends Node
 
 const SAVE_PATH = "user://savegame.json"
 
+## Save the current game state to file
+##
+## Serializes player data, enemy positions, and game state
+## to a JSON file in the user directory. This method handles
+## error checking and ensures data integrity.
+##
+## @param player: The player node to save
+## @param enemies: Array of enemy nodes to save
+## @return: true if save was successful, false otherwise
 func save_game(player, enemies, level_seed: int = 0, level_settings: Dictionary = {}):
 	var save_data = {
 		"player": {
@@ -49,6 +64,15 @@ func save_game(player, enemies, level_seed: int = 0, level_settings: Dictionary 
 		print("Failed to save game - could not open file")
 		return false
 
+## Load game state from save file
+##
+## Deserializes game data and applies it to the current scene.
+## Returns level data that can be used for level regeneration.
+## If the save file is corrupted or missing, returns empty dictionary.
+##
+## @param player: Player node to apply loaded data to
+## @param enemies: Array of enemy nodes to update
+## @return: Dictionary containing level data for regeneration
 func load_game(player, enemies) -> Dictionary:
 	"""Load game and return level data for regeneration"""
 	if not FileAccess.file_exists(SAVE_PATH):
