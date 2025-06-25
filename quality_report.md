@@ -1,11 +1,12 @@
 ﻿# Code Quality Report
 
-**Date:** 2025-06-25 20:07
+**Date:** 2025-06-25 23:57
 **Project:** diploma
 
 ## Statistics
 
-- GDScript files: 8
-- Issues found: 168
+- GDScript files: 9
+- Issues found: 160
 
-**Code Quality:** -320%
+**Code Quality:** -255.6%
+

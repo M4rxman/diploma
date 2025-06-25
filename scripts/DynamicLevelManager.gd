@@ -1,4 +1,6 @@
-# scripts/DynamicLevelManager.gd - Fixed signal naming
+## Initialize voth playing map and navmesh
+##
+## Should be called before game starts.
 extends Node3D
 
 class_name DynamicLevelManager
@@ -35,11 +37,15 @@ var game_manager: GameManager
 var current_seed: int = 0
 var map_bounds: Dictionary = {}
 
-# FIXED: Renamed signals to be more specific
+## Emits `level_generated()` signal after the level is fully ready.
 signal level_generated  # When level building is complete
 signal enemies_spawned  # When enemy spawning system is ready
 
 
+## Initialize the new random level
+##
+## Called when the node enters the scene tree.
+## Sets up generation of a new level
 func _ready():
 	rng = RandomNumberGenerator.new()
 	rng.randomize()
@@ -53,6 +59,10 @@ func _ready():
 	call_deferred("generate_new_level")
 
 
+## Generates the terrain, obstacles, enemies and navigation mesh.
+##
+## This method is called during `_ready()`. It instantiates ground tiles,
+## obstacles, connects navigation regions and optionally spawns enemies.
 func generate_new_level():
 	"""Generate a completely new level with random seed and map boundaries"""
 	print("Generating new level...")
@@ -120,6 +130,7 @@ func calculate_map_bounds():
 	print("Map bounds set: ", map_bounds)
 
 
+##warpper function of wall creation
 func add_improved_map_walls():
 	"""Add improved walls around the map perimeter to prevent falling off"""
 	if not current_level:
@@ -213,6 +224,10 @@ func add_improved_map_walls():
 	print("Added improved boundary walls around map with height: ", wall_height)
 
 
+##Basic function of wall creation
+##
+##
+##Called within add_improved_map_walls()
 func create_wall(
 	parent: Node,
 	position: Vector3,
@@ -249,6 +264,9 @@ func create_wall(
 	print("Created wall: ", wall_name, " at position: ", position, " with size: ", size)
 
 
+##Basic function of wall materiall assertion
+##
+##Called withi the create_wall()
 func create_wall_material() -> StandardMaterial3D:
 	"""Create an improved material for boundary walls"""
 	var material = StandardMaterial3D.new()
@@ -262,6 +280,7 @@ func create_wall_material() -> StandardMaterial3D:
 	return material
 
 
+## Destroyer function removes existing level and spawner if found
 func clear_current_level():
 	"""Remove existing level and spawner"""
 	if current_level:
@@ -273,6 +292,7 @@ func clear_current_level():
 		level_spawner = null
 
 
+## Creates the basic level structure with Navigation_Map
 func create_level_structure(seed: int):
 	"""Create the basic level structure with Navigation_Map"""
 	const NavigationMapScript = preload("res://Level/LevelGenerator/NavigationMap.gd")
@@ -492,14 +512,23 @@ func add_enhanced_waves():
 		print("Created Wave ", i + 1, " with ", config["enemies"], " enemies")
 
 
+## Basic getter function
+##
+## Returns Navigation_Map class node
 func get_current_level() -> Navigation_Map:
 	return current_level
 
 
+## Basic getter function
+##
+## Returns LevelSpawner node
 func get_level_spawner() -> LevelSpawner:
 	return level_spawner
 
 
+## Basic getter function
+##
+## Returns dictionary of map_bounds
 func get_map_bounds() -> Dictionary:
 	return map_bounds
 

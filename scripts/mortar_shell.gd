@@ -1,16 +1,26 @@
-# scripts/mortar_shell.gd - Improved targeting and physics
+## Mortar_Shell handles projectile behavior, armed state, and explosion effects.
+## Inherits RigidBody3D to leverage physics for movement and collisions.
 class_name Mortar_Shell
 extends RigidBody3D
 
+## Radius within which entities are affected by explosion.
 @export var explosion_radius: float = 10.0
+## Base damage dealt at center of explosion.
 @export var explosion_damage: float = 200.0
+## Maximum force applied to rigid bodies from explosion.
 @export var explosion_force: float = 500.0
-@export var fuse_time: float = 4.0  # Increased fuse time
+## Time in seconds before shell auto-detonates.
+@export var fuse_time: float = 4.0
+## Initial launch speed magnitude.
 @export var launch_speed: float = 30.0
 
+## Whether shell is armed and will explode on impact.
 var armed: bool = false
+## Delay before shell becomes armed (seconds).
 var arm_delay: float = 0.3
+## World position of the intended target.
 var target_position: Vector3
+## Tracks if shell has been launched.
 var has_launched: bool = false
 
 
@@ -38,44 +48,9 @@ func _ready():
 		explode()
 
 
-func launch_at_target(target_pos: Vector3, force: float = 25.0):
-	"""Launch mortar shell at target position using ballistic trajectory"""
-	target_position = target_pos
-	has_launched = true
-
-	print("Launching mortar at target: ", target_pos, " from: ", global_position)
-
-	# Calculate ballistic trajectory
-	var to_target = target_pos - global_position
-	var horizontal_distance = Vector2(to_target.x, to_target.z).length()
-	var height_diff = to_target.y
-
-	# Use 45-degree launch angle for good arc
-	var launch_angle = deg_to_rad(45.0)
-	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
-
-	print("Horizontal distance: ", horizontal_distance, " Height diff: ", height_diff)
-
-	# Calculate required velocity for ballistic trajectory
-	var velocity_magnitude = sqrt((gravity * horizontal_distance) / sin(2 * launch_angle))
-
-	# Adjust for height difference
-	if height_diff != 0:
-		velocity_magnitude *= 1.1  # Slight boost for height differences
-
-	# Calculate launch direction
-	var horizontal_direction = Vector3(to_target.x, 0, to_target.z).normalized()
-	var launch_direction = horizontal_direction * cos(launch_angle) + Vector3.UP * sin(launch_angle)
-
-	# Apply launch velocity
-	linear_velocity = launch_direction * velocity_magnitude
-
-	# Add some spin for visual effect
-	angular_velocity = Vector3(randf_range(-3, 3), randf_range(-2, 2), randf_range(-3, 3))
-
-	print("Launch velocity: ", linear_velocity, " (magnitude: ", velocity_magnitude, ")")
-
-
+## Legacy launch method for arbitrary direction.
+## @param direction: Unit vector direction.
+## @param force: Speed magnitude.
 func launch(direction: Vector3, force: float):
 	"""Legacy launch method for compatibility"""
 	has_launched = true
@@ -84,6 +59,8 @@ func launch(direction: Vector3, force: float):
 	print("Mortar launched with legacy method - Velocity: ", linear_velocity)
 
 
+## Called on collision with another body.
+## Only triggers explosion if armed and launched.
 func _on_body_entered(body):
 	"""Handle collision with other bodies"""
 	if not armed or not has_launched:
@@ -102,6 +79,7 @@ func _on_body_entered(body):
 	explode()
 
 
+## Performs explosion: damage, force, visual effect, then frees shell.
 func explode():
 	"""Handle explosion"""
 	if not is_inside_tree():
@@ -165,6 +143,7 @@ func explode():
 	queue_free()
 
 
+## Spawns simple particle bodies for visual explosion.
 func _create_explosion_effect():
 	"""Create simple explosion visual effect"""
 	print("BOOM! Explosion at: ", global_position)
@@ -218,6 +197,7 @@ func _create_explosion_effect():
 		cleanup_timer.start()
 
 
+## Optional debug hook for trajectory visualization.
 func _physics_process(delta):
 	"""Debug trajectory"""
 	if has_launched and is_inside_tree():
