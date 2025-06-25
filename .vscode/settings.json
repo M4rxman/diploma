@@ -1,0 +1,15 @@
+{
+    "godot_tools.editor_path": "godot",
+    "files.associations": {
+        "*.gd": "gdscript",
+        "*.tres": "gdresource",
+        "*.tscn": "gdscene"
+    },
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+}

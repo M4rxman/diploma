@@ -17,41 +17,46 @@ extends Node
 #    - A Spawner node with the updated script
 #    - Connect spawner to navigation map
 
+
 # Helper function to set up a level in your game
-static func setup_level_spawning(game_manager: Node3D, level_scene: PackedScene, enemy_scene: PackedScene) -> LevelSpawner:
+static func setup_level_spawning(
+	game_manager: Node3D, level_scene: PackedScene, enemy_scene: PackedScene
+) -> LevelSpawner:
 	# Instance the level
 	var level = level_scene.instantiate()
 	game_manager.add_child(level)
-	
+
 	# Find the NavigationMap in the level
 	var nav_map = level as NavigationMap
 	if not nav_map:
 		nav_map = level.get_node("Navigation") as NavigationMap
-	
+
 	if not nav_map:
 		push_error("No NavigationMap found in level!")
 		return null
-	
+
 	# Create spawner
 	var spawner = LevelSpawner.new()
 	spawner.name = "LevelSpawner"
 	spawner.enemy_scene = enemy_scene
 	game_manager.add_child(spawner)
-	
+
 	# Connect spawner to navigation map
 	spawner.navmap = nav_map
-	
+
 	# Create Timer for spawner
 	var timer = Timer.new()
 	timer.name = "Timer"
 	spawner.add_child(timer)
 	timer.timeout.connect(spawner._on_timer_timeout)
-	
+
 	return spawner
+
 
 # Example of how to use in your GameManager:
 static func example_usage():
-	print("""
+	print(
+		"""
 	In your GameManager.gd, add:
 	
 	@export var level_scenes: Array[PackedScene] = []  # Add NavMap1.tscn, NavMap2.tscn etc
@@ -80,4 +85,5 @@ static func example_usage():
 			
 			# Start spawning
 			level_spawner.reset()
-	""")
+	"""
+	)

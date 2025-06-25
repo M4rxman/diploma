@@ -1,4 +1,4 @@
-# A proportional–integral–derivative controller (PID controller or three-term controller) 
+# A proportional–integral–derivative controller (PID controller or three-term controller)
 extends RefCounted
 class_name Pid3D
 
@@ -9,10 +9,12 @@ var _d: float
 var _prev_error: Vector3
 var _error_integral: Vector3
 
+
 func _init(p: float, i: float, d: float) -> void:
 	_p = p
 	_i = i
 	_d = d
+
 
 func update(error: Vector3, delta: float) -> Vector3:
 	_error_integral += error * delta

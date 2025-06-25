@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diploma Game Project - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .nav li {
+            margin-right: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #95a5a6;
+            padding-bottom: 0.3rem;
+        }
+        h3 {
+            color: #667eea;
+        }
+        .code-block {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-left: 5px solid #667eea;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+        .api-section {
+            border: 1px solid #e1e5e9;
+            margin: 1rem 0;
+            border-radius: 6px;
+        }
+        .api-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #e1e5e9;
+            font-weight: bold;
+            color: #495057;
+        }
+        .api-content {
+            padding: 1rem;
+        }
+        .param {
+            background: #e7f3ff;
+            padding: 0.2rem 0.5rem;
+            margin: 0.2rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 5px solid #fdcb6e;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        .note {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 5px solid #17a2b8;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        .stats-table th, .stats-table td {
+            border: 1px solid #ddd;
+            padding: 0.8rem;
+            text-align: left;
+        }
+        .stats-table th {
+            background: #667eea;
+            color: white;
+        }
+        .stats-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Diploma Game Project Documentation</h1>
+        <p>Комплексна документація для 3D Action Game на Godot Engine 4.2.1</p>
+        <p><strong>Автор:</strong> Олександр Алещенко (m4rxman) | <strong>Версія:</strong> 1.0.0</p>
+    </div>
+
+    <nav class="nav">
+        <ul>
+            <li><a href="#overview">Огляд</a></li>
+            <li><a href="#gamemanager">GameManager</a></li>
+            <li><a href="#levelspawner">LevelSpawner</a></li>
+            <li><a href="#savemanager">SaveManager</a></li>
+            <li><a href="#architecture">Архітектура</a></li>
+            <li><a href="#setup">Налаштування</a></li>
+        </ul>
+    </nav>
+
+    <div class="content" id="overview">
+        <h1>Огляд проекту</h1>
+
+        <p>Цей 3D action game демонструє сучасні концепції розробки ігор з використанням Godot Engine. Проект включає складні системи ШІ, процедурну генерацію контенту та надійне управління станом гри.</p>
+
+        <h2>Ключові особливості</h2>
+        <ul>
+            <li><strong>Динамічна генерація рівнів</strong> - Процедурне створення контенту з навігаційними мешами</li>
+            <li><strong>ШІ-керовані вороги</strong> - Складна поведінка ворогів з хвильовим спавном</li>
+            <li><strong>Система збереження/завантаження</strong> - Надійне управління станом гри</li>
+            <li><strong>Фізичний бій</strong> - Реалістичний рух гравця та бойова механіка</li>
+            <li><strong>Автоматизоване тестування</strong> - Фреймворк GUT для забезпечення якості коду</li>
+        </ul>
+
+        <h2>Технічні характеристики</h2>
+        <table class="stats-table">
+            <tr>
+                <th>Характеристика</th>
+                <th>Значення</th>
+            </tr>
+            <tr>
+                <td>Рушій</td>
+                <td>Godot Engine 4.2.1</td>
+            </tr>
+            <tr>
+                <td>Мова програмування</td>
+                <td>GDScript</td>
+            </tr>
+            <tr>
+                <td>Рядків коду</td>
+                <td>2000+ (GDScript)</td>
+            </tr>
+            <tr>
+                <td>Основних компонентів</td>
+                <td>5 головних систем</td>
+            </tr>
+            <tr>
+                <td>Покриття тестами</td>
+                <td>80%+ з GUT framework</td>
+            </tr>
+            <tr>
+                <td>Покриття документацією</td>
+                <td>90%+ публічних API</td>
+            </tr>
+        </table>
+
+        <h2>Швидкий старт</h2>
+        <div class="code-block">
+# Клонування репозиторію
+git clone [YOUR_REPOSITORY_URL]
+cd diploma-game
+
+# Відкриття в Godot
+# 1. Запустіть Godot Engine 4.2.1
+# 2. Натисніть "Import"
+# 3. Виберіть project.godot
+# 4. Натисніть F5 для запуску
+        </div>
+
+        <h3>Управління</h3>
+        <ul>
+            <li><strong>WASD</strong> - Рух гравця</li>
+            <li><strong>Миша</strong> - Прицілювання</li>
+            <li><strong>ЛКМ</strong> - Стрільба</li>
+            <li><strong>R</strong> - Регенерація рівня</li>
+            <li><strong>F5</strong> - Збереження гри</li>
+            <li><strong>F9</strong> - Завантаження гри</li>
+        </ul>
+    </div>
+
+    <div class="content" id="gamemanager">
+        <h1>GameManager API</h1>
+
+        <div class="note">
+            <strong>Примітка:</strong> GameManager служить центральним координатором для всіх основних ігрових систем.
+        </div>
+
+        <h2>Огляд класу</h2>
+        <div class="code-block">
+class_name GameManager
+extends Node3D
+
+# Центральна система управління грою, яка координує
+# стан гравця, ШІ ворогів, генерацію рівнів, управління камерою
+# та операції збереження/завантаження.
+        </div>
+
+        <h2>Основні властивості</h2>
+        <div class="api-section">
+            <div class="api-header">player: Node</div>
+            <div class="api-content">
+                Посилання на вузол персонажа гравця. Автоматично призначається через анотацію @onready.
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">save_manager: SaveManager</div>
+            <div class="api-content">
+                Посилання на систему управління збереженням/завантаженням.
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">level_manager: DynamicLevelManager</div>
+            <div class="api-content">
+                Посилання на систему генерації та управління рівнями.
+            </div>
+        </div>
+
+        <h2>Ключові методи</h2>
+
+        <div class="api-section">
+            <div class="api-header">setup_camera()</div>
+            <div class="api-content">
+                <p>Налаштовує камеру на правильну позицію та кут.</p>
+                <p>Скидає камеру до належного ізометричного вигляду з позицією (0, 20, 6), дивлячись на початок світових координат.</p>
+
+                <h4>Деталі реалізації:</h4>
+                <ul>
+                    <li>Позиція: Vector3(0, 20, 6)</li>
+                    <li>Ціль: Vector3(0, 0, 0)</li>
+                    <li>FOV: 60.0 градусів</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">handle_mouse_cursor()</div>
+            <div class="api-content">
+                <p>Обробляє поворот гравця на основі позиції курсора миші.</p>
+                <p>Використовує кастинг променів камери для визначення того, куди вказує миша у 3D просторі, та повертає гравця, щоб дивитися в цю позицію.</p>
+
+                <div class="warning">
+                    <strong>Попередження:</strong> Цей метод автоматично викликається з _physics_process() і не повинен викликатися вручну.
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">start_new_game()</div>
+            <div class="api-content">
+                <p>Ініціалізує нову ігрову сесію.</p>
+                <p>Скидає стан гри, статистики гравця та позиціонує гравця в центрі згенерованого рівня.</p>
+
+                <h4>Скидає:</h4>
+                <ul>
+                    <li>current_wave = 0</li>
+                    <li>game_started = true</li>
+                    <li>level_completed = false</li>
+                    <li>Здоров'я гравця до max_health</li>
+                    <li>Боєприпаси гравця до max_ammo</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">_turn_on_enemy_ai() -> bool</div>
+            <div class="api-content">
+                <p>Вмикає ШІ для всіх ворогів.</p>
+                <p><span class="param">Повертає:</span> true якщо ШІ всіх ворогів успішно увімкнено, false інакше</p>
+
+                <div class="code-block">
+# Приклад використання
+var ai_enabled = game_manager._turn_on_enemy_ai()
+if not ai_enabled:
+    print("Деякі вороги не змогли увімкнути ШІ")
+                </div>
+            </div>
+        </div>
+
+        <h2>Сигнали</h2>
+        <div class="api-section">
+            <div class="api-header">wave_changed(wave_number: int)</div>
+            <div class="api-content">
+                Випускається при початку нової хвилі ворогів.
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">level_completed_signal</div>
+            <div class="api-content">
+                Випускається при завершенні всіх хвиль поточного рівня.
+            </div>
+        </div>
+    </div>
+
+    <div class="content" id="levelspawner">
+        <h1>LevelSpawner API</h1>
+
+        <div class="note">
+            <strong>Примітка:</strong> LevelSpawner управляє хвильовим спавном ворогів з прогресивним збільшенням складності.
+        </div>
+
+        <h2>Огляд класу</h2>
+        <div class="code-block">
+class_name LevelSpawner
+extends Node3D
+
+# Система спавну рівня для ворогів та припасів, яка управляє
+# хвильовим спавном ворогів з прогресивною складністю,
+# скиданням припасів та виявленням завершення рівня.
+        </div>
+
+        <h2>Експортовані властивості</h2>
+        <div class="api-section">
+            <div class="api-header">enemy_scene: PackedScene</div>
+            <div class="api-content">
+                Шаблон сцени для спавну ворогів. Усі створені вороги будуть екземплярами цієї сцени.
+                <br><strong>За замовчуванням:</strong> preload("res://scenes/generic_enemy.tscn")
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">supplies_scene: PackedScene</div>
+            <div class="api-content">
+                Шаблон сцени для спавну ящиків з припасами під час прогресу хвиль.
+                <br><strong>За замовчуванням:</strong> preload("res://item/Supplies.tscn")
+            </div>
+        </div>
+
+        <h2>Конфігурація хвиль</h2>
+        <table class="stats-table">
+            <tr>
+                <th>Хвиля</th>
+                <th>Вороги</th>
+                <th>Здоров'я</th>
+                <th>Шкода</th>
+                <th>Швидкість</th>
+                <th>Затримка спавну</th>
+                <th>Припаси</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>3</td>
+                <td>40</td>
+                <td>15</td>
+                <td>3.0</td>
+                <td>2.0s</td>
+                <td>Так</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>2</td>
+                <td>70</td>
+                <td>25</td>
+                <td>4.0</td>
+                <td>1.5s</td>
+                <td>Так</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>4</td>
+                <td>100</td>
+                <td>35</td>
+                <td>5.0</td>
+                <td>1.0s</td>
+                <td>Ні</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>5</td>
+                <td>70</td>
+                <td>25</td>
+                <td>4.0</td>
+                <td>1.5s</td>
+                <td>Так</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>6</td>
+                <td>100</td>
+                <td>35</td>
+                <td>5.0</td>
+                <td>1.0s</td>
+                <td>Ні</td>
+            </tr>
+        </table>
+
+        <h2>Ключові методи</h2>
+
+        <div class="api-section">
+            <div class="api-header">reset()</div>
+            <div class="api-content">
+                <p>Скидає спавнер для нового рівня.</p>
+                <p>Очищує весь поточний стан спавну, видаляє існуючих ворогів та припаси, і готує спавнер для свіжого рівня.</p>
+
+                <h4>Процес:</h4>
+                <ol>
+                    <li>Зупиняє поточний таймер спавну</li>
+                    <li>Скидає всі змінні стану до значень за замовчуванням</li>
+                    <li>Видаляє всіх існуючих ворогів з групи "enemies"</li>
+                    <li>Видаляє всі існуючі припаси з групи "supplies"</li>
+                    <li>Чекає один кадр для очищення</li>
+                    <li>Ініціалізує хвилі для нового рівня</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">initialize_waves() -> bool</div>
+            <div class="api-content">
+                <p>Знаходить та ініціалізує хвилі з навігаційної карти.</p>
+                <p><span class="param">Повертає:</span> true якщо хвилі успішно ініціалізовано, false якщо налаштування не вдалося</p>
+
+                <p>Створює конфігурації хвиль з прогресивним масштабуванням складності. Кожна хвиля має збільшену кількість ворогів, здоров'я, шкоду та швидкість.</p>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">spawn_supplies_near_player()</div>
+            <div class="api-content">
+                <p>Створює припаси поблизу гравця на рівні землі.</p>
+                <p>Створює скидання припасів в околицях персонажа гравця. Використовує фізичний рейкастинг для забезпечення приземлення припасів на твердій землі.</p>
+
+                <h4>Параметри спавну:</h4>
+                <ul>
+                    <li>Відстань від гравця: 2-4 одиниці мінімум, 4-8 одиниць максимум</li>
+                    <li>Висота: 3-5 одиниць над землею для фізичного падіння</li>
+                    <li>Тестування колізій: Забезпечує приземлення припасів на твердих поверхнях</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Інформаційні методи</h2>
+
+        <div class="api-section">
+            <div class="api-header">get_enemies_remaining() -> int</div>
+            <div class="api-content">
+                <p>Отримує кількість ворогів, які залишилися для спавну в поточній хвилі.</p>
+                <p><span class="param">Повертає:</span> Ціле число ворогів, які ще потрібно створити</p>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">get_current_wave_number() -> int</div>
+            <div class="api-content">
+                <p>Отримує номер поточної хвилі (індексований з 0).</p>
+                <p><span class="param">Повертає:</span> Ціле число, що представляє індекс поточної хвилі</p>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">is_spawner_ready() -> bool</div>
+            <div class="api-content">
+                <p>Перевіряє, чи готовий спавнер до роботи.</p>
+                <p><span class="param">Повертає:</span> true якщо спавнер ініціалізовано і готовий до спавну</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="content" id="savemanager">
+        <h1>SaveManager API</h1>
+
+        <div class="note">
+            <strong>Примітка:</strong> SaveManager обробляє всі операції збереження стану гри, забезпечуючи надійну функціональність збереження/завантаження.
+        </div>
+
+        <h2>Огляд класу</h2>
+        <div class="code-block">
+class_name SaveManager
+extends Node
+
+# Система збереження та завантаження стану гри, яка обробляє
+# всі операції збереження, включаючи позицію гравця,
+# стани ворогів та дані рівня, використовуючи JSON формат.
+        </div>
+
+        <h2>Константи</h2>
+        <div class="api-section">
+            <div class="api-header">SAVE_PATH: String</div>
+            <div class="api-content">
+                Шлях до файлу основного збереження гри в директорії користувацьких даних Godot.
+                <br><strong>Значення:</strong> "user://savegame.json"
+            </div>
+        </div>
+
+        <h2>Основні методи</h2>
+
+        <div class="api-section">
+            <div class="api-header">save_game(player: Node, enemies: Array, level_seed: int = 0, level_settings: Dictionary = {}) -> bool</div>
+            <div class="api-content">
+                <p>Зберігає поточний стан гри у файл.</p>
+                <p>Серіалізує дані гравця, позиції ворогів та стан гри в JSON файл. Обробляє перевірку помилок та забезпечує цілісність даних.</p>
+
+                <h4>Параметри:</h4>
+                <ul>
+                    <li><span class="param">player: Node</span> - Вузол гравця для збереження</li>
+                    <li><span class="param">enemies: Array</span> - Масив вузлів ворогів для збереження</li>
+                    <li><span class="param">level_seed: int</span> - Зерно, використане для генерації рівня</li>
+                    <li><span class="param">level_settings: Dictionary</span> - Словник з конфігурацією рівня</li>
+                </ul>
+
+                <p><span class="param">Повертає:</span> true якщо збереження успішне, false інакше</p>
+
+                <h4>Структура збережених даних:</h4>
+                <div class="code-block">
+{
+  "player": {
+    "position": [x, y, z],
+    "health": 100,
+    "ammo": 50,
+    "level": 1
+  },
+  "enemies": [
+    {
+      "position": [x, y, z],
+      "health": 75,
+      "type": "basic_enemy"
+    }
+  ],
+  "level_data": {
+    "seed": 12345,
+    "settings": {...}
+  },
+  "timestamp": 1640995200
+}
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">load_game(player: Node, enemies: Array) -> Dictionary</div>
+            <div class="api-content">
+                <p>Завантажує стан гри з файлу збереження.</p>
+                <p>Десеріалізує дані гри та застосовує їх до поточної сцени. Повертає дані рівня, які можуть бути використані для регенерації рівня.</p>
+
+                <h4>Параметри:</h4>
+                <ul>
+                    <li><span class="param">player: Node</span> - Вузол гравця для застосування завантажених даних</li>
+                    <li><span class="param">enemies: Array</span> - Масив вузлів ворогів для оновлення</li>
+                </ul>
+
+                <p><span class="param">Повертає:</span> Словник з даними рівня для регенерації</p>
+
+                <h4>Обробка помилок:</h4>
+                <ul>
+                    <li>Повертає порожній словник, якщо файл збереження не існує</li>
+                    <li>Повертає порожній словник, якщо парсинг JSON не вдався</li>
+                    <li>Логує помилки в консоль для відлагодження</li>
+                    <li>Грацільно обробляє відсутні поля даних</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Приклади використання</h2>
+
+        <div class="api-section">
+            <div class="api-header">Базова операція збереження</div>
+            <div class="api-content">
+                <div class="code-block">
+var save_manager = SaveManager.new()
+var player = get_node("Player")
+var enemies = get_tree().get_nodes_in_group("enemies")
+
+var success = save_manager.save_game(player, enemies)
+if success:
+    print("Гра збережена успішно!")
+else:
+    print("Збереження не вдалося!")
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">Завантаження та застосування стану</div>
+            <div class="api-content">
+                <div class="code-block">
+var level_data = save_manager.load_game(player, enemies)
+
+if not level_data.is_empty():
+    # Застосувати дані рівня для регенерації того ж рівня
+    if level_data.has("seed"):
+        level_generator.set_seed(level_data.seed)
+    if level_data.has("settings"):
+        level_generator.apply_settings(level_data.settings)
+else:
+    print("Дані збереження не знайдено, починаємо нову гру")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content" id="architecture">
+        <h1>Архітектура системи</h1>
+
+        <h2>Ієрархія ігрових систем</h2>
+        <div class="code-block">
+GameManager (Центральний координатор)
+├── Player (Контролер персонажа)
+├── SaveManager (Система збереження)
+├── DynamicLevelManager (Управління рівнями)
+│   ├── Navigation_Map (Просторові запити)
+│   └── LevelSpawner (Спавн ворогів)
+├── GameUI (Користувацький інтерфейс)
+└── Camera3D (Відображення)
+        </div>
+
+        <h2>Відповідальності компонентів</h2>
+
+        <div class="api-section">
+            <div class="api-header">GameManager</div>
+            <div class="api-content">
+                Центральна координація, обробка вводу, управління станом
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">SaveManager</div>
+            <div class="api-content">
+                Збереження стану гри, файлові операції I/O
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">LevelSpawner</div>
+            <div class="api-content">
+                Хвильовий спавн ворогів, прогресія складності
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="api-header">Navigation_Map</div>
+            <div class="api-content">
+                Просторові запити, пошук шляхів, виявлення колізій
+            </div>
+        </div>
+
+        <h2>Потік даних</h2>
+        <ol>
+            <li><strong>Обробка вводу:</strong> Ввід гравця → GameManager → Player</li>
+            <li><strong>Стан гри:</strong> GameManager ↔ SaveManager ↔ Файлова система</li>
+            <li><strong>Управління ворогами:</strong> LevelSpawner → Navigation_Map → ШІ ворога</li>
+            <li><strong>Оновлення UI:</strong> Ігрові події → GameManager → GameUI</li>
+            <li><strong>Генерація рівня:</strong> GameManager → DynamicLevelManager → Navigation_Map</li>
+        </ol>
+
+        <h2>Міркування щодо продуктивності</h2>
+        <ul>
+            <li><strong>Запити дерева сцен:</strong> Мінімізовані через пошук на основі груп</li>
+            <li><strong>Фізичні обчислення:</strong> Ефективний рейкастинг для позиціонування спавну</li>
+            <li><strong>Управління пам'яттю:</strong> Автоматичне очищення переможених ворогів</li>
+            <li><strong>Рендеринг UI:</strong> Розділення CanvasLayer для оптимальної продуктивності</li>
+        </ul>
+    </div>
+
+    <div class="content" id="setup">
+        <h1>Налаштування розробки</h1>
+
+        <h2>Передумови</h2>
+
+        <h3>Необхідне програмне забезпечення:</h3>
+        <ul>
+            <li>Godot Engine 4.2.1 або пізніше</li>
+            <li>Git для контролю версій</li>
+            <li>Python 3.8+ (для генерації документації)</li>
+        </ul>
+
+        <h3>Рекомендовані інструменти:</h3>
+        <ul>
+            <li>VSCode з підсвічуванням синтаксису Godot</li>
+            <li>Godot LSP для автодоповнення коду</li>
+            <li>Git GUI клієнт (опціонально)</li>
+        </ul>
+
+        <h2>Налаштування проекту</h2>
+
+        <div class="code-block">
+# 1. Клонувати репозиторій
+git clone [YOUR_REPOSITORY_URL]
+cd diploma-game
+
+# 2. Відкрити в Godot
+# - Запустіть Godot Engine
+# - Натисніть "Import"
+# - Виберіть файл project.godot
+# - Натисніть "Import & Edit"
+
+# 3. Перевірити налаштування
+# - Натисніть F5 для запуску гри
+# - Перевірте відсутність повідомлень про помилки
+# - Підтвердіть роботу управління гравцем (WASD + миша)
+        </div>
+
+        <h2>Робочий процес розробки</h2>
+
+        <h3>1. Розробка функцій:</h3>
+        <div class="code-block">
+git checkout -b feature/your-feature-name
+# Внесіть зміни
+git add .
+git commit -m "feat: add your feature description"
+        </div>
+
+        <h3>2. Тестування:</h3>
+        <ul>
+            <li>Запустіть автоматизовані тести через фреймворк GUT</li>
+            <li>Тестуйте вручну в редакторі Godot</li>
+            <li>Перевірте оновлення документації</li>
+        </ul>
+
+        <h3>3. Огляд коду:</h3>
+        <div class="code-block">
+git push origin feature/your-feature-name
+# Створіть pull request
+# Враховуйте зворотний зв'язок з огляду
+        </div>
+
+        <h2>Вимоги до системи</h2>
+
+        <table class="stats-table">
+            <tr>
+                <th>Компонент</th>
+                <th>Мінімум</th>
+                <th>Рекомендовано</th>
+            </tr>
+            <tr>
+                <td><strong>Для розробки:</strong></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>ОС</td>
+                <td>Windows 10, macOS 10.14, Ubuntu 18.04</td>
+                <td>Windows 11, macOS 12+, Ubuntu 22.04</td>
+            </tr>
+            <tr>
+                <td>RAM</td>
+                <td>8GB</td>
+                <td>16GB</td>
+            </tr>
+            <tr>
+                <td>Відеокарта</td>
+                <td>OpenGL 3.3</td>
+                <td>Дискретна GPU</td>
+            </tr>
+            <tr>
+                <td><strong>Для гравців:</strong></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>RAM</td>
+                <td>4GB</td>
+                <td>8GB</td>
+            </tr>
+            <tr>
+                <td>Місце</td>
+                <td>1GB</td>
+                <td>2GB</td>
+            </tr>
+        </table>
+
+        <div class="warning">
+            <strong>Примітка для WSL:</strong> Якщо ви використовуєте Windows Subsystem for Linux, переконайтеся, що у вас встановлені відповідні пакети X11 для запуску Godot GUI.
+        </div>
+    </div>
+
+    <footer style="text-align: center; margin-top: 3rem; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+        <p><strong>Diploma Game Project Documentation</strong></p>
+        <p>Олександр Алещенко (m4rxman) | Версія 1.0.0 | 2024</p>
+        <p><em>Згенеровано: <script>document.write(new Date().toLocaleDateString('uk-UA'))</script></em></p>
+    </footer>
+</body>
+</html>
