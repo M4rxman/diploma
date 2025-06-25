@@ -557,10 +557,10 @@ def main():
         if build.exists():
             print(f"Testing {build}...")
             if test_build(build):
-                print(f"✅ {build.name} passed")
+                print(f"{build.name} passed")
                 passed += 1
             else:
-                print(f"❌ {build.name} failed")
+                print(f"{build.name} failed")
         else:
             print(f"⚠️ {build} not found")
     
