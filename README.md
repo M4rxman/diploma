@@ -60,8 +60,23 @@ Cleanup Commit: <commit-sha>
 Repository Cleanup Summary
 Removed unnecessary temporary files and editor-generated cache
 
-Added .gitignore to exclude build artifacts and editor logs
+## 📖 Стандарти документування
 
-Created proper README.md and LICENSE
+### Правила документування коду
 
-Validated directory structure: scenes, scripts, assets, tests, saves
+1. **Використовуйте подвійні коментарі `##` для API документації**
+2. **Документуйте всі публічні методи та класи**
+3. **Включайте опис параметрів та значень, що повертаються**
+4. **Додавайте приклади використання для складних функцій**
+
+### Формат документації
+
+```gdscript
+## Brief description
+##
+## Detailed description
+## @param name: Description
+## @return: Description
+func method_name(name: Type) -> ReturnType:
+    pass
+
